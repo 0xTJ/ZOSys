@@ -206,8 +206,8 @@
 203   0000              	GLOBAL _int_prt0
 204   0000              	GLOBAL _int0
 205   0000              	GLOBAL _main
-206   0000              	GLOBAL _a
-207   0000              	GLOBAL __malloc_heap
+206   0000              	GLOBAL __malloc_heap
+207   0000              	GLOBAL _a
 208   0000              	GLOBAL __malloc_block
 209   0000              	GLOBAL _stack2
 210   0000              	GLOBAL _loop
@@ -1300,25 +1300,25 @@
       1FC0  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
       1FE0  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
                         	DEFS 4096
-1044  2000              ;--------------------------------------------------------
-1045  2000              ; ram data
-1046  2000              ;--------------------------------------------------------
-1047  2000              
-1048  2000              IF 0
-1049  2000              
-1050  2000              ; .area _INITIALIZED removed by z88dk
-1051  2000              
-1052  2000              __malloc_heap:
-1053  2000              	DEFS 2
-1054  2000              _a:
-1055  2000              	DEFS 1
-1056  2000              
-1057  2000              ENDIF
-1058  2000              
-1059  2000              ;--------------------------------------------------------
-1060  2000              ; absolute external ram data
-1061  2000              ;--------------------------------------------------------
-1062  2000              	SECTION IGNORE
+1044  2000              _a:
+1045  2000  00          	DEFS 1
+1046  2001              ;--------------------------------------------------------
+1047  2001              ; ram data
+1048  2001              ;--------------------------------------------------------
+1049  2001              
+1050  2001              IF 0
+1051  2001              
+1052  2001              ; .area _INITIALIZED removed by z88dk
+1053  2001              
+1054  2001              __malloc_heap:
+1055  2001              	DEFS 2
+1056  2001              
+1057  2001              ENDIF
+1058  2001              
+1059  2001              ;--------------------------------------------------------
+1060  2001              ; absolute external ram data
+1061  2001              ;--------------------------------------------------------
+1062  2001              	SECTION IGNORE
 1063  0000              ;--------------------------------------------------------
 1064  0000              ; global & static initialisations
 1065  0000              ;--------------------------------------------------------
@@ -1335,342 +1335,242 @@
 1076  0000              ; Function main
 1077  0000              ; ---------------------------------
 1078  0000              _main:
-1079  0000  3E 80       	ld	a,0x80
-1080  0002  ED 39 DE    	out0	(_CMR), a
-1081  0005  CD 00 00    	call	_asci_0_setup
-1082  0008  ED 4B 00 00 	ld	bc, (__malloc_heap)
-1083  000C  21 00 10    	ld	hl,0x1000
-1084  000F  E5          	push	hl
-1085  0010  C5          	push	bc
-1086  0011  CD 00 00    	call	_heap_init_callee
-1087  0014  11 00 00    	ld	de,0x0000
-1088  0017  D5          	push	de
-1089  0018  E5          	push	hl
-1090  0019  CD 00 00    	call	_asci_0_put_ul
-1091  001C  C1          	pop	bc
-1092  001D  C1          	pop	bc
-1093  001E  3E 0A       	ld	a,0x0a
-1094  0020  F5          	push	af
-1095  0021  33          	inc	sp
-1096  0022  CD 00 00    	call	_asci_0_putc
-1097  0025  33          	inc	sp
-1098  0026  21 00 00    	ld	hl,___str_0
-1099  0029  E5          	push	hl
-1100  002A  CD 00 00    	call	_asci_0_puts
-1101  002D  C1          	pop	bc
-1102  002E  CD 00 00    	call	_process_init
-1103  0031  CD 00 00    	call	_process_new
-1104  0034  22 00 00    	ld	(_current_proc),hl
-1105  0037  21 12 00    	ld	hl,___str_1
-1106  003A  E5          	push	hl
-1107  003B  CD 00 00    	call	_asci_0_puts
-1108  003E  C1          	pop	bc
-1109  003F  21 00 00    	ld	hl,_proc_list
-1110  0042  CD 00 00    	call	_p_list_front_fastcall
-1111  0045  11 00 00    	ld	de,0x0000
-1112  0048  D5          	push	de
-1113  0049  E5          	push	hl
-1114  004A  CD 00 00    	call	_asci_0_put_ul
-1115  004D  C1          	pop	bc
-1116  004E  C1          	pop	bc
-1117  004F  3E 0A       	ld	a,0x0a
-1118  0051  F5          	push	af
-1119  0052  33          	inc	sp
-1120  0053  CD 00 00    	call	_asci_0_putc
-1121  0056  33          	inc	sp
-1122  0057  21 00 00    	ld	hl,_proc_list
-1123  005A  CD 00 00    	call	_p_list_back_fastcall
-1124  005D  11 00 00    	ld	de,0x0000
-1125  0060  D5          	push	de
-1126  0061  E5          	push	hl
-1127  0062  CD 00 00    	call	_asci_0_put_ul
-1128  0065  C1          	pop	bc
-1129  0066  C1          	pop	bc
-1130  0067  3E 0A       	ld	a,0x0a
-1131  0069  F5          	push	af
-1132  006A  33          	inc	sp
-1133  006B  CD 00 00    	call	_asci_0_putc
-1134  006E  33          	inc	sp
-1135  006F  2A 00 00    	ld	hl,(_current_proc)
-1136  0072  CD 00 00    	call	_p_list_next_fastcall
-1137  0075  11 00 00    	ld	de,0x0000
-1138  0078  D5          	push	de
-1139  0079  E5          	push	hl
-1140  007A  CD 00 00    	call	_asci_0_put_ul
-1141  007D  C1          	pop	bc
-1142  007E  C1          	pop	bc
-1143  007F  3E 0A       	ld	a,0x0a
-1144  0081  F5          	push	af
-1145  0082  33          	inc	sp
-1146  0083  CD 00 00    	call	_asci_0_putc
-1147  0086  33          	inc	sp
-1148  0087  3E 00       	ld	a,0x00
-1149  0089  ED 39 CC    	out0	(_TMDR0L), a
-1150  008C  3E 48       	ld	a,0x48
-1151  008E  ED 39 CD    	out0	(_TMDR0H), a
-1152  0091  3E FF       	ld	a,0xff
-1153  0093  ED 39 CE    	out0	(_RLDR0L), a
-1154  0096  3E 47       	ld	a,0x47
-1155  0098  ED 39 CF    	out0	(_RLDR0H), a
-1156  009B  3E 11       	ld	a,0x11
-1157  009D  ED 39 D0    	out0	(_TCR), a
-1158  00A0  21 24 00    	ld	hl,___str_2
-1159  00A3  E5          	push	hl
-1160  00A4  CD 00 00    	call	_asci_0_puts
-1161  00A7  C1          	pop	bc
-1162  00A8  21 36 00    	ld	hl,___str_3
-1163  00AB  E5          	push	hl
-1164  00AC  CD 00 00    	call	_asci_0_puts
-1165  00AF  C1          	pop	bc
-1166  00B0              l_main_00102:
-1167  00B0  18 FE       	jr	l_main_00102
-1168  00B2              	SECTION rodata_compiler
-1169  0000              ___str_0:
-1170  0000  53 74 61 72 74 69 6E 67 20 5A 4F 53 59 53 20 31 
+1079  0000  DD E5       	push	ix
+1080  0002  DD 21 00 00 	ld	ix,0
+1081  0006  DD 39       	add	ix,sp
+1082  0008  3B          	dec	sp
+1083  0009  3B          	dec	sp
+1084  000A  3E 80       	ld	a,0x80
+1085  000C  ED 39 DE    	out0	(_CMR), a
+1086  000F  CD 00 00    	call	_asci_0_setup
+1087  0012  ED 4B 00 00 	ld	bc, (__malloc_heap)
+1088  0016  21 00 10    	ld	hl,0x1000
+1089  0019  E5          	push	hl
+1090  001A  C5          	push	bc
+1091  001B  CD 00 00    	call	_heap_init_callee
+1092  001E  11 00 00    	ld	de,0x0000
+1093  0021  D5          	push	de
+1094  0022  E5          	push	hl
+1095  0023  CD 00 00    	call	_asci_0_put_ul
+1096  0026  C1          	pop	bc
+1097  0027  C1          	pop	bc
+1098  0028  3E 0A       	ld	a,0x0a
+1099  002A  F5          	push	af
+1100  002B  33          	inc	sp
+1101  002C  CD 00 00    	call	_asci_0_putc
+1102  002F  33          	inc	sp
+1103  0030  21 00 00    	ld	hl,___str_0
+1104  0033  E5          	push	hl
+1105  0034  CD 00 00    	call	_asci_0_puts
+1106  0037  C1          	pop	bc
+1107  0038  CD 00 00    	call	_process_init
+1108  003B  CD 00 00    	call	_process_new
+1109  003E  22 00 00    	ld	(_current_proc),hl
+1110  0041  21 12 00    	ld	hl,___str_1
+1111  0044  E5          	push	hl
+1112  0045  CD 00 00    	call	_asci_0_puts
+1113  0048  C1          	pop	bc
+1114  0049  CD 00 00    	call	_process_new
+1115  004C  4D          	ld	c, l
+1116  004D  44          	ld	b, h
+1117  004E  21 06 00    	ld	hl,0x0006
+1118  0051  09          	add	hl, bc
+1119  0052  5D          	ld	e,l
+1120  0053  54          	ld	d,h
+1121  0054  36 00       	ld	(hl),+((_stack2+0x1000) & 0xFF)
+1122  0056  23          	inc	hl
+1123  0057  36 10       	ld	(hl),+((_stack2+0x1000) / 256)
+1124  0059  21 08 00    	ld	hl,0x0008
+1125  005C  09          	add	hl, bc
+1126  005D  3A 00 00    	ld	a,(_context_temp_bbr)
+1127  0060  77          	ld	(hl),a
+1128  0061  21 00 10    	ld	hl,+(_stack2 + 0x1000)
+1129  0064  22 00 00    	ld	(_context_temp_sp),hl
+1130  0067  D5          	push	de
+1131  0068  21 CF 00    	ld	hl,_loop
+1132  006B  E5          	push	hl
+1133  006C  CD 00 00    	call	_context_init
+1134  006F  D1          	pop	de
+1135  0070  D1          	pop	de
+1136  0071  21 00 00    	ld	hl,_context_temp_sp
+1137  0074  ED A0       	ldi
+1138  0076  03          	inc	bc
+1139  0077  7E          	ld	a, (hl)
+1140  0078  12          	ld	(de), a
+1141  0079  2B          	dec	hl
+1142  007A  AF          	xor	a, a
+1143  007B  77          	ld	(hl), a
+1144  007C  23          	inc	hl
+1145  007D  77          	ld	(hl), a
+1146  007E  3E 00       	ld	a,0x00
+1147  0080  ED 39 CC    	out0	(_TMDR0L), a
+1148  0083  3E 48       	ld	a,0x48
+1149  0085  ED 39 CD    	out0	(_TMDR0H), a
+1150  0088  3E FF       	ld	a,0xff
+1151  008A  ED 39 CE    	out0	(_RLDR0L), a
+1152  008D  3E 47       	ld	a,0x47
+1153  008F  ED 39 CF    	out0	(_RLDR0H), a
+1154  0092  3E 11       	ld	a,0x11
+1155  0094  ED 39 D0    	out0	(_TCR), a
+1156  0097  21 24 00    	ld	hl,___str_2
+1157  009A  E5          	push	hl
+1158  009B  CD 00 00    	call	_asci_0_puts
+1159  009E  E1          	pop	hl
+1160  009F              l_main_00103:
+1161  009F  21 00 20    	ld	hl,_a
+1162  00A2  7E          	ld	a, (hl)
+1163  00A3  EE 10       	xor	a,0x10
+1164  00A5  77          	ld	(hl), a
+1165  00A6  ED 39 0D    	out0	(_io_led_output), a
+1166  00A9  21 00 00    	ld	hl,0x0000
+1167  00AC  E3          	ex	(sp), hl
+1168  00AD              l_main_00106:
+1169  00AD  DD 7E FE    	ld	a,(ix-2)
+1170  00B0  D6 40       	sub	a,0x40
+1171  00B2  DD 7E FF    	ld	a,(ix-1)
+1172  00B5  17          	rla
+1173  00B6  3F          	ccf
+1174  00B7  1F          	rra
+1175  00B8  DE 9F       	sbc	a,0x9f
+1176  00BA  30 E3       	jr	NC,l_main_00103
+1177  00BC  DD 34 FE    	inc	(ix-2)
+1178  00BF  20 EC       	jr	NZ,l_main_00106
+1179  00C1  DD 34 FF    	inc	(ix-1)
+1180  00C4  18 E7       	jr	l_main_00106
+1181  00C6              	SECTION rodata_compiler
+1182  0000              ___str_0:
+1183  0000  53 74 61 72 74 69 6E 67 20 5A 4F 53 59 53 20 31 
                         	DEFM "Starting ZOSYS 1"
-1171  0010  0A          	DEFB 0x0a
-1172  0011  00          	DEFB 0x00
-1173  0012              	SECTION rodata_compiler
-1174  0012              ___str_1:
-1175  0012  53 74 61 72 74 69 6E 67 20 5A 4F 53 59 53 20 32 
+1184  0010  0A          	DEFB 0x0a
+1185  0011  00          	DEFB 0x00
+1186  0012              	SECTION rodata_compiler
+1187  0012              ___str_1:
+1188  0012  53 74 61 72 74 69 6E 67 20 5A 4F 53 59 53 20 32 
                         	DEFM "Starting ZOSYS 2"
-1176  0022  0A          	DEFB 0x0a
-1177  0023  00          	DEFB 0x00
-1178  0024              	SECTION rodata_compiler
-1179  0024              ___str_2:
-1180  0024  53 74 61 72 74 69 6E 67 20 5A 4F 53 59 53 20 33 
-                        	DEFM "Starting ZOSYS 3"
-1181  0034  0A          	DEFB 0x0a
-1182  0035  00          	DEFB 0x00
-1183  0036              	SECTION rodata_compiler
-1184  0036              ___str_3:
-1185  0036  53 74 61 72 74 65 64 20 5A 4F 53 59 53 
+1189  0022  0A          	DEFB 0x0a
+1190  0023  00          	DEFB 0x00
+1191  0024              	SECTION rodata_compiler
+1192  0024              ___str_2:
+1193  0024  53 74 61 72 74 65 64 20 5A 4F 53 59 53 
                         	DEFM "Started ZOSYS"
-1186  0043  0A          	DEFB 0x0a
-1187  0044  00          	DEFB 0x00
-1188  0045              	SECTION code_compiler
-1189  00B2              ;	---------------------------------
-1190  00B2              ; Function int0 is a stub
-1191  00B2              ; ---------------------------------
-1192  00B2              EXTERN l_ret
-1193  00B2              defc _int0 = l_ret
-1194  00B2              	SECTION code_compiler
-1195  00B2              ;	---------------------------------
-1196  00B2              ; Function loop
-1197  00B2              ; ---------------------------------
-1198  00B2              _loop:
-1199  00B2  DD E5       	push	ix
-1200  00B4  DD 21 00 00 	ld	ix,0
-1201  00B8  DD 39       	add	ix,sp
-1202  00BA  3B          	dec	sp
-1203  00BB  3B          	dec	sp
-1204  00BC              l_loop_00103:
-1205  00BC  21 02 00    	ld	hl,_a
-1206  00BF  4E          	ld	c, (hl)
-1207  00C0  06 00       	ld	b,0x00
-1208  00C2  79          	ld	a, c
-1209  00C3  EE 20       	xor	a,0x20
-1210  00C5  4F          	ld	c,a
-1211  00C6  71          	ld	(hl),c
-1212  00C7  ED 39 0D    	out0	(_io_led_output), a
-1213  00CA  21 00 00    	ld	hl,0x0000
-1214  00CD  E3          	ex	(sp), hl
-1215  00CE              l_loop_00106:
-1216  00CE  DD 7E FE    	ld	a,(ix-2)
-1217  00D1  D6 40       	sub	a,0x40
-1218  00D3  DD 7E FF    	ld	a,(ix-1)
-1219  00D6  17          	rla
-1220  00D7  3F          	ccf
-1221  00D8  1F          	rra
-1222  00D9  DE 9F       	sbc	a,0x9f
-1223  00DB  30 DF       	jr	NC,l_loop_00103
-1224  00DD  DD 34 FE    	inc	(ix-2)
-1225  00E0  20 EC       	jr	NZ,l_loop_00106
-1226  00E2  DD 34 FF    	inc	(ix-1)
-1227  00E5  18 E7       	jr	l_loop_00106
-1228  00E7              	SECTION code_compiler
-1229  00E7              ;	---------------------------------
-1230  00E7              ; Function int_prt0
-1231  00E7              ; ---------------------------------
-1232  00E7              _int_prt0:
-1233  00E7  DD E5       	push	ix
-1234  00E9  DD 21 00 00 	ld	ix,0
-1235  00ED  DD 39       	add	ix,sp
-1236  00EF  3B          	dec	sp
-1237  00F0  3B          	dec	sp
-1238  00F1  ED 38 D0    	in0	a, (_TCR)
-1239  00F4  ED 38 CC    	in0	a, (_TMDR0L)
-1240  00F7  2A 00 00    	ld	hl,(_current_proc)
-1241  00FA  CD 00 00    	call	_p_list_next_fastcall
-1242  00FD  4D          	ld	c, l
-1243  00FE  44          	ld	b, h
-1244  00FF  33          	inc	sp
-1245  0100  33          	inc	sp
-1246  0101  C5          	push	bc
-1247  0102  DD 7E FF    	ld	a,(ix-1)
-1248  0105  DD B6 FE    	or	a,(ix-2)
-1249  0108  20 0B       	jr	NZ,l_int_prt0_00102
-1250  010A  21 00 00    	ld	hl,_proc_list
-1251  010D  CD 00 00    	call	_p_list_front_fastcall
-1252  0110  4D          	ld	c, l
-1253  0111  44          	ld	b, h
-1254  0112  33          	inc	sp
-1255  0113  33          	inc	sp
-1256  0114  C5          	push	bc
-1257  0115              l_int_prt0_00102:
-1258  0115  DD 7E FF    	ld	a,(ix-1)
-1259  0118  DD B6 FE    	or	a,(ix-2)
-1260  011B  CA F9 01    	jp	Z,l_int_prt0_00105
-1261  011E  21 02 00    	ld	hl,_a
-1262  0121  4E          	ld	c, (hl)
-1263  0122  06 00       	ld	b,0x00
-1264  0124  79          	ld	a, c
-1265  0125  EE 40       	xor	a,0x40
-1266  0127  4F          	ld	c,a
-1267  0128  71          	ld	(hl),c
-1268  0129  ED 39 0D    	out0	(_io_led_output), a
-1269  012C  21 45 00    	ld	hl,___str_4
-1270  012F  E5          	push	hl
-1271  0130  CD 00 00    	call	_asci_0_puts
-1272  0133  C1          	pop	bc
-1273  0134  11 00 00    	ld	de,0x0000
-1274  0137  2A 00 00    	ld	hl,(_context_temp_sp)
-1275  013A  D5          	push	de
-1276  013B  E5          	push	hl
-1277  013C  CD 00 00    	call	_asci_0_put_ul
-1278  013F  C1          	pop	bc
-1279  0140  C1          	pop	bc
-1280  0141  3E 0A       	ld	a,0x0a
-1281  0143  F5          	push	af
-1282  0144  33          	inc	sp
-1283  0145  CD 00 00    	call	_asci_0_putc
-1284  0148  33          	inc	sp
-1285  0149  21 50 00    	ld	hl,___str_5
-1286  014C  E5          	push	hl
-1287  014D  CD 00 00    	call	_asci_0_puts
-1288  0150  C1          	pop	bc
-1289  0151  3A 00 00    	ld	a,(_context_temp_bbr)
-1290  0154  4F          	ld	c,a
-1291  0155  11 00 00    	ld	de,0x0000
-1292  0158  43          	ld	b,e
-1293  0159  D5          	push	de
-1294  015A  C5          	push	bc
-1295  015B  CD 00 00    	call	_asci_0_put_ul
-1296  015E  C1          	pop	bc
-1297  015F  C1          	pop	bc
-1298  0160  3E 0A       	ld	a,0x0a
-1299  0162  F5          	push	af
-1300  0163  33          	inc	sp
-1301  0164  CD 00 00    	call	_asci_0_putc
-1302  0167  33          	inc	sp
-1303  0168  ED 4B 00 00 	ld	bc, (_current_proc)
-1304  016C  21 06 00    	ld	hl,0x0006
-1305  016F  09          	add	hl, bc
-1306  0170  EB          	ex	de, hl
-1307  0171  21 00 00    	ld	hl,_context_temp_sp
-1308  0174  ED A0       	ldi
-1309  0176  7E          	ld	a, (hl)
-1310  0177  12          	ld	(de), a
-1311  0178  ED 4B 00 00 	ld	bc, (_current_proc)
-1312  017C  21 08 00    	ld	hl,0x0008
-1313  017F  09          	add	hl, bc
-1314  0180  D1          	pop	de
-1315  0181  3A 00 00    	ld	a,(_context_temp_bbr)
-1316  0184  77          	ld	(hl),a
-1317  0185  D5          	push	de
-1318  0186  EB          	ex	de,hl
-1319  0187  23          	inc	hl
-1320  0188  23          	inc	hl
-1321  0189  23          	inc	hl
-1322  018A  23          	inc	hl
-1323  018B  23          	inc	hl
-1324  018C  23          	inc	hl
-1325  018D  11 00 00    	ld	de,_context_temp_sp
-1326  0190  ED A0       	ldi
-1327  0192  7E          	ld	a,(hl)
-1328  0193  E1          	pop	hl
-1329  0194  12          	ld	(de),a
-1330  0195  E5          	push	hl
-1331  0196  11 08 00    	ld	de,0x0008
-1332  0199  19          	add	hl, de
-1333  019A  7E          	ld	a, (hl)
-1334  019B  32 00 00    	ld	(_context_temp_bbr),a
-1335  019E  DD 6E FE    	ld	l,(ix-2)
-1336  01A1  DD 66 FF    	ld	h,(ix-1)
-1337  01A4  22 00 00    	ld	(_current_proc),hl
-1338  01A7  21 5C 00    	ld	hl,___str_6
-1339  01AA  E5          	push	hl
-1340  01AB  CD 00 00    	call	_asci_0_puts
-1341  01AE  C1          	pop	bc
-1342  01AF  11 00 00    	ld	de,0x0000
-1343  01B2  2A 00 00    	ld	hl,(_context_temp_sp)
-1344  01B5  D5          	push	de
-1345  01B6  E5          	push	hl
-1346  01B7  CD 00 00    	call	_asci_0_put_ul
-1347  01BA  C1          	pop	bc
-1348  01BB  C1          	pop	bc
-1349  01BC  3E 0A       	ld	a,0x0a
-1350  01BE  F5          	push	af
-1351  01BF  33          	inc	sp
-1352  01C0  CD 00 00    	call	_asci_0_putc
-1353  01C3  33          	inc	sp
-1354  01C4  21 6A 00    	ld	hl,___str_7
-1355  01C7  E5          	push	hl
-1356  01C8  CD 00 00    	call	_asci_0_puts
-1357  01CB  C1          	pop	bc
-1358  01CC  3A 00 00    	ld	a,(_context_temp_bbr)
-1359  01CF  4F          	ld	c,a
-1360  01D0  11 00 00    	ld	de,0x0000
-1361  01D3  43          	ld	b,e
-1362  01D4  D5          	push	de
-1363  01D5  C5          	push	bc
-1364  01D6  CD 00 00    	call	_asci_0_put_ul
-1365  01D9  C1          	pop	bc
-1366  01DA  C1          	pop	bc
-1367  01DB  3E 0A       	ld	a,0x0a
-1368  01DD  F5          	push	af
-1369  01DE  33          	inc	sp
-1370  01DF  CD 00 00    	call	_asci_0_putc
-1371  01E2  33          	inc	sp
-1372  01E3  3A 02 00    	ld	a,(_a)
-1373  01E6  E6 F0       	and	a,0xf0
-1374  01E8  4F          	ld	c, a
-1375  01E9  2A 00 00    	ld	hl,(_current_proc)
-1376  01EC  11 04 00    	ld	de,0x0004
-1377  01EF  19          	add	hl, de
-1378  01F0  7E          	ld	a, (hl)
-1379  01F1  B1          	or	a, c
-1380  01F2  21 02 00    	ld	hl,_a
-1381  01F5  77          	ld	(hl), a
-1382  01F6  ED 39 0D    	out0	(_io_led_output), a
-1383  01F9              l_int_prt0_00105:
-1384  01F9  DD F9       	ld	sp, ix
-1385  01FB  DD E1       	pop	ix
-1386  01FD  C9          	ret
-1387  01FE              	SECTION rodata_compiler
-1388  0045              ___str_4:
-1389  0045  53 61 76 65 64 20 53 50 3A 20 
-                        	DEFM "Saved SP: "
-1390  004F  00          	DEFB 0x00
-1391  0050              	SECTION rodata_compiler
-1392  0050              ___str_5:
-1393  0050  53 61 76 65 64 20 42 42 52 3A 20 
-                        	DEFM "Saved BBR: "
-1394  005B  00          	DEFB 0x00
-1395  005C              	SECTION rodata_compiler
-1396  005C              ___str_6:
-1397  005C  52 65 73 74 6F 72 65 64 20 53 50 3A 20 
-                        	DEFM "Restored SP: "
-1398  0069  00          	DEFB 0x00
-1399  006A              	SECTION rodata_compiler
-1400  006A              ___str_7:
-1401  006A  52 65 73 74 6F 72 65 64 20 42 42 52 3A 20 
-                        	DEFM "Restored BBR: "
-1402  0078  00          	DEFB 0x00
-1403  0079              	SECTION data_compiler
-1404  0000              __malloc_heap:
-1405  0000  00 10       	DEFW __malloc_block
-1406  0002              _a:
-1407  0002  10          	DEFB +0x10
-1408  0003              	SECTION IGNORE
-1409  0000              
+1194  0031  0A          	DEFB 0x0a
+1195  0032  00          	DEFB 0x00
+1196  0033              	SECTION code_compiler
+1197  00C6              ;	---------------------------------
+1198  00C6              ; Function int0
+1199  00C6              ; ---------------------------------
+1200  00C6              _int0:
+1201  00C6  21 33 00    	ld	hl,___str_3
+1202  00C9  E5          	push	hl
+1203  00CA  CD 00 00    	call	_asci_0_puts
+1204  00CD  C1          	pop	bc
+1205  00CE  C9          	ret
+1206  00CF              	SECTION rodata_compiler
+1207  0033              ___str_3:
+1208  0033  49 4E 54 30 	DEFM "INT0"
+1209  0037  0A          	DEFB 0x0a
+1210  0038  00          	DEFB 0x00
+1211  0039              	SECTION code_compiler
+1212  00CF              ;	---------------------------------
+1213  00CF              ; Function loop
+1214  00CF              ; ---------------------------------
+1215  00CF              _loop:
+1216  00CF  DD E5       	push	ix
+1217  00D1  DD 21 00 00 	ld	ix,0
+1218  00D5  DD 39       	add	ix,sp
+1219  00D7  3B          	dec	sp
+1220  00D8  3B          	dec	sp
+1221  00D9              l_loop_00103:
+1222  00D9  21 00 20    	ld	hl,_a
+1223  00DC  7E          	ld	a, (hl)
+1224  00DD  EE 20       	xor	a,0x20
+1225  00DF  77          	ld	(hl), a
+1226  00E0  ED 39 0D    	out0	(_io_led_output), a
+1227  00E3  21 00 00    	ld	hl,0x0000
+1228  00E6  E3          	ex	(sp), hl
+1229  00E7              l_loop_00106:
+1230  00E7  DD 7E FE    	ld	a,(ix-2)
+1231  00EA  D6 40       	sub	a,0x40
+1232  00EC  DD 7E FF    	ld	a,(ix-1)
+1233  00EF  17          	rla
+1234  00F0  3F          	ccf
+1235  00F1  1F          	rra
+1236  00F2  DE 9F       	sbc	a,0x9f
+1237  00F4  30 E3       	jr	NC,l_loop_00103
+1238  00F6  DD 34 FE    	inc	(ix-2)
+1239  00F9  20 EC       	jr	NZ,l_loop_00106
+1240  00FB  DD 34 FF    	inc	(ix-1)
+1241  00FE  18 E7       	jr	l_loop_00106
+1242  0100              	SECTION code_compiler
+1243  0100              ;	---------------------------------
+1244  0100              ; Function int_prt0
+1245  0100              ; ---------------------------------
+1246  0100              _int_prt0:
+1247  0100  ED 38 D0    	in0	a, (_TCR)
+1248  0103  ED 38 CC    	in0	a, (_TMDR0L)
+1249  0106  2A 00 00    	ld	hl,(_current_proc)
+1250  0109  CD 00 00    	call	_p_list_next_fastcall
+1251  010C  7C          	ld	a,h
+1252  010D  B5          	or	a,l
+1253  010E  4D          	ld	c,l
+1254  010F  44          	ld	b,h
+1255  0110  20 08       	jr	NZ,l_int_prt0_00102
+1256  0112  21 00 00    	ld	hl,_proc_list
+1257  0115  CD 00 00    	call	_p_list_front_fastcall
+1258  0118  4D          	ld	c, l
+1259  0119  44          	ld	b, h
+1260  011A              l_int_prt0_00102:
+1261  011A  78          	ld	a, b
+1262  011B  B1          	or	a, c
+1263  011C  C8          	ret	Z
+1264  011D  ED 5B 00 00 	ld	de, (_current_proc)
+1265  0121  21 06 00    	ld	hl,0x0006
+1266  0124  19          	add	hl, de
+1267  0125  EB          	ex	de, hl
+1268  0126  21 00 00    	ld	hl,_context_temp_sp
+1269  0129  ED A0       	ldi
+1270  012B  03          	inc	bc
+1271  012C  7E          	ld	a, (hl)
+1272  012D  12          	ld	(de), a
+1273  012E  ED 5B 00 00 	ld	de, (_current_proc)
+1274  0132  21 08 00    	ld	hl,0x0008
+1275  0135  19          	add	hl, de
+1276  0136  3A 00 00    	ld	a,(_context_temp_bbr)
+1277  0139  77          	ld	(hl),a
+1278  013A  69          	ld	l,c
+1279  013B  60          	ld	h,b
+1280  013C  23          	inc	hl
+1281  013D  23          	inc	hl
+1282  013E  23          	inc	hl
+1283  013F  23          	inc	hl
+1284  0140  23          	inc	hl
+1285  0141  23          	inc	hl
+1286  0142  11 00 00    	ld	de,_context_temp_sp
+1287  0145  ED A0       	ldi
+1288  0147  03          	inc	bc
+1289  0148  7E          	ld	a,(hl)
+1290  0149  12          	ld	(de),a
+1291  014A  69          	ld	l, c
+1292  014B  60          	ld	h, b
+1293  014C  11 08 00    	ld	de,0x0008
+1294  014F  19          	add	hl, de
+1295  0150  7E          	ld	a, (hl)
+1296  0151  32 00 00    	ld	(_context_temp_bbr),a
+1297  0154  ED 43 00 00 	ld	(_current_proc), bc
+1298  0158  3A 00 20    	ld	a,(_a)
+1299  015B  E6 F0       	and	a,0xf0
+1300  015D  4F          	ld	c, a
+1301  015E  2A 00 00    	ld	hl,(_current_proc)
+1302  0161  11 04 00    	ld	de,0x0004
+1303  0164  19          	add	hl, de
+1304  0165  7E          	ld	a, (hl)
+1305  0166  B1          	or	a, c
+1306  0167  21 00 20    	ld	hl,_a
+1307  016A  77          	ld	(hl), a
+1308  016B  ED 39 0D    	out0	(_io_led_output), a
+1309  016E  C9          	ret
+1310  016F              	SECTION data_compiler
+1311  0000              __malloc_heap:
+1312  0000  00 10       	DEFW __malloc_block
+1313  0002              	SECTION IGNORE
+1314  0000              

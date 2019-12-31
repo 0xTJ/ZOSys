@@ -6,6 +6,6 @@
 extern volatile uint16_t context_temp_sp;
 extern volatile uint8_t context_temp_bbr;
 
-extern void context_init(void);
+extern void context_init(void (*pc)());
 
 #endif

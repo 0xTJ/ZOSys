@@ -50,8 +50,11 @@ SECTION code_crt_init
 
 start:
     di
-
     im 1
+
+    ; Relocate internal registers
+    ld a, #__IO_BASE_ADDRESS
+    out0 (ICR), a
 
     ; Initialize Stack Pointer
     ld hl, #KSTACK_TAIL
@@ -65,10 +68,6 @@ ENDIF
     out0 (IL), a
     ld a, #((vector_table >> 8) & 0xFF)
     ld i, a
-
-    ; Relocate internal registers
-    ld a, #__IO_BASE_ADDRESS
-    out0 (ICR), a
 
     ; Common Area 0 to fill 0x0000-0x0FFF
     ; Bank Area to fill 0x1000-0x7FFF
@@ -110,12 +109,15 @@ ENDIF
     ; Bank Area to fill 0x1000-0xEFFF
     ; Common Area 1 to fill 0xF000-0xFFFF
     ld a, #0xF1
-    out0 (BBR), a
+    out0 (CBAR), a
 
     ; Make BA and CA1 offset to 0x80000
     ld a, #0x80000 >> 12
     out0 (BBR), a
     out0 (CBR), a
+
+    ; Initialize heap
+
 
 
 SECTION code_ca0_2
@@ -184,9 +186,14 @@ syscall:
 PUBLIC _context_init
 PUBLIC context_init
 
-; void context_init(void) __preserves_regs(c,d,e,iyh,iyl);
+; void context_init(void (*pc)());
 _context_init:
 context_init:
+    ; Copy pc argument to DE
+    pop hl
+    pop de
+    push de
+    push hl
     ; Swap _context_temp_sp and SP using HL
     ld hl, (_context_temp_sp)
     ld (_context_temp_sp), sp
@@ -199,6 +206,8 @@ context_init:
     ld (_context_temp_bbr), a
     ; Clear HL
     ld hl, 0
+    ; Push return address
+    push de
     ; Push IX
     push hl
     ; Push AF, AF'
@@ -317,7 +326,6 @@ _context_temp_bbr:
 
 SECTION code_ba
 ORG 0x1000
-
 
 SECTION code_compiler
 SECTION data_compiler
