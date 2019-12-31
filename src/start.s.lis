@@ -1785,7 +1785,7 @@
 135   0010                  ; Call main:
 136   0010                  ; char *args[1] = { NULL };
 137   0010                  ; io_led_output = main(0, &args);
-138   0010  11 CA 00        ld de, argv
+138   0010  11 E1 00        ld de, argv
 139   0013  D5              push de
 140   0014  11 00 00        ld de,0
 141   0017  D5              push de
@@ -1803,9 +1803,9 @@
 153   0023              EXTERN _int0
 154   0023              
 155   0023              int0:
-156   0023  CD 7E 00        call context_save
+156   0023  CD 95 00        call context_save
 157   0026  CD 00 00        call _int0
-158   0029  CD A4 00        call context_restore
+158   0029  CD BB 00        call context_restore
 159   002C  FB              ei
 160   002D  ED 4D           reti
 161   002F              
@@ -1813,9 +1813,9 @@
 163   002F              EXTERN _int_prt0
 164   002F              
 165   002F              int_prt0:
-166   002F  CD 7E 00        call context_save
+166   002F  CD 95 00        call context_save
 167   0032  CD 00 00        call _int_prt0
-168   0035  CD A4 00        call context_restore
+168   0035  CD BB 00        call context_restore
 169   0038  FB              ei
 170   0039  ED 4D           reti
 171   003B              
@@ -1823,157 +1823,199 @@
 173   003B              syscall:
 174   003B                  ; Load A * 2 to HL
 175   003B  AC              xor h
-176   003C  17              rla
-177   003D  CB 14           rl h
-178   003F  6F              ld l, a
-179   0040              
-180   0040  C9              ret
-181   0041              
-182   0041              
-183   0041              PUBLIC _context_init
-184   0041              PUBLIC context_init
-185   0041              
-186   0041              ; void context_init(void (*pc)());
-187   0041              _context_init:
-188   0041              context_init:
-189   0041                  ; Copy pc argument to DE
-190   0041  E1              pop hl
-191   0042  D1              pop de
-192   0043  D5              push de
-193   0044  E5              push hl
-194   0045                  ; Swap _context_temp_sp and SP using HL
-195   0045  2A 00 00        ld hl, (_context_temp_sp)
-196   0048  ED 73 00 00     ld (_context_temp_sp), sp
-197   004C  F9              ld sp, hl
-198   004D                  ; Swap _context_temp_bbr and BBR
-199   004D  3A 02 00        ld a, (_context_temp_bbr)
-200   0050  ED 00 F9        in0 b, (BBR)
-201   0053  ED 39 F9        out0 (BBR), a
-202   0056  78              ld a, b
-203   0057  32 02 00        ld (_context_temp_bbr), a
-204   005A                  ; Clear HL
-205   005A  21 00 00        ld hl, 0
-206   005D                  ; Push return address
-207   005D  D5              push de
-208   005E                  ; Push IX
-209   005E  E5              push hl
-210   005F                  ; Push AF, AF'
-211   005F  E5              push hl
-212   0060  E5              push hl
-213   0061                  ; Push BC, DE, HL
-214   0061  E5              push hl
-215   0062  E5              push hl
-216   0063  E5              push hl
-217   0064                  ; Push BC', DE', HL'
-218   0064  E5              push hl
-219   0065  E5              push hl
-220   0066  E5              push hl
-221   0067                  ; Push IY
-222   0067  E5              push hl
-223   0068                  ; Swap _context_temp_bbr and BBR
-224   0068  3A 02 00        ld a, (_context_temp_bbr)
-225   006B  ED 00 F9        in0 b, (BBR)
-226   006E  ED 39 F9        out0 (BBR), a
-227   0071  78              ld a, b
-228   0072  32 02 00        ld (_context_temp_bbr), a
-229   0075                  ; Swap _context_temp_sp and SP using HL
-230   0075  2A 00 00        ld hl, (_context_temp_sp)
-231   0078  ED 73 00 00     ld (_context_temp_sp), sp
-232   007C  F9              ld sp, hl
-233   007D                  ; Return
-234   007D  C9              ret
-235   007E              
-236   007E              
-237   007E              PUBLIC context_save
-238   007E              
-239   007E              context_save:
-240   007E                  ; Pop return address to IX while pushing IX
-241   007E  DD E3           ex (sp), ix
-242   0080                  ; Push AF, AF'
-243   0080  F5              push af
-244   0081  08              ex af,af'
-245   0082  F5              push af
-246   0083                  ; Push BC, DE, HL
-247   0083  C5              push bc
-248   0084  D5              push de
-249   0085  E5              push hl
-250   0086                  ; Push BC', DE', HL'
-251   0086  D9              exx
-252   0087  C5              push bc
-253   0088  D5              push de
-254   0089  E5              push hl
-255   008A                  ; Push IY
-256   008A  FD E5           push iy
-257   008C                  ; Swap _context_temp_bbr and BBR
-258   008C  3A 02 00        ld a, (_context_temp_bbr)
-259   008F  ED 00 F9        in0 b, (BBR)
-260   0092  ED 39 F9        out0 (BBR), a
-261   0095  78              ld a, b
-262   0096  32 02 00        ld (_context_temp_bbr), a
-263   0099                  ; Swap _context_temp_sp and SP using HL
-264   0099  2A 00 00        ld hl, (_context_temp_sp)
-265   009C  ED 73 00 00     ld (_context_temp_sp), sp
-266   00A0  F9              ld sp, hl
-267   00A1                  ; Push return address from IX
-268   00A1  DD E5           push ix
-269   00A3                  ; Return
-270   00A3  C9              ret
-271   00A4              
-272   00A4              
-273   00A4              PUBLIC context_restore
-274   00A4              
-275   00A4              context_restore:
-276   00A4                  ; Pop return address to IX
-277   00A4  DD E1           pop ix
-278   00A6                  ; Swap _context_temp_sp and SP using HL
-279   00A6  2A 00 00        ld hl, (_context_temp_sp)
-280   00A9  ED 73 00 00     ld (_context_temp_sp), sp
-281   00AD  F9              ld sp, hl
-282   00AE                  ; Swap _context_temp_bbr and BBR
-283   00AE  3A 02 00        ld a, (_context_temp_bbr)
-284   00B1  ED 00 F9        in0 b, (BBR)
-285   00B4  ED 39 F9        out0 (BBR), a
-286   00B7  78              ld a, b
-287   00B8  32 02 00        ld (_context_temp_bbr), a
-288   00BB                  ; Pop IY
-289   00BB  FD E1           pop iy
-290   00BD                  ; Pop HL', DE', BC'
-291   00BD  E1              pop hl
-292   00BE  D1              pop de
-293   00BF  C1              pop bc
-294   00C0  D9              exx
-295   00C1                  ; Pop HL, DE, BC
-296   00C1  E1              pop hl
-297   00C2  D1              pop de
-298   00C3  C1              pop bc
-299   00C4                  ; Pop AF', AF
-300   00C4  F1              pop af
-301   00C5  08              ex af,af'
-302   00C6  F1              pop af
-303   00C7                  ; Push return address while popping to IX
-304   00C7  DD E3           ex (sp),ix
-305   00C9                  ; Return
-306   00C9  C9              ret
-307   00CA              
-308   00CA              
-309   00CA              argv:
-310   00CA  00 00           DEFW 0
-311   00CC              
-312   00CC              
-313   00CC              SECTION code_ca1
-314   0000              ORG 0xE000
-315   0000              
-316   0000              PUBLIC _context_temp_sp, _context_temp_bbr
-317   0000              
-318   0000              _context_temp_sp:
-319   0000  00 00           DEFW 0
-320   0002              _context_temp_bbr:
-321   0002  00              DEFB 0
-322   0003              
-323   0003              
-324   0003              SECTION code_ba
-325   0000              ORG 0x1000
-326   0000              
-327   0000              
-328   0000              SECTION bss_compiler
-329   0000              
+176   003C  CB 27           sla a
+177   003E  CB 14           rl h
+178   0040  6F              ld l, a
+179   0041              
+180   0041                  ; Add syscall_table to HL
+181   0041  D5 11 E3 00 19 D1 
+                            add hl, syscall_table
+182   0047              
+183   0047                  ; Load function address to HL
+184   0047  5E              ld e, (hl)
+185   0048  23              inc hl
+186   0049  56              ld d, (hl)
+187   004A  62 6B           ld hl, de
+188   004C              
+189   004C                  ; Return with error if HL is 0x0000
+190   004C  3E 00           ld a, 0
+191   004E  B5              or l
+192   004F  B4              or h
+193   0050  CA 54 00        jp z, syscall_bad
+194   0053              
+195   0053                  ; Tail-call function in HL
+196   0053  E9              jp (hl)
+197   0054              
+198   0054              syscall_bad:
+199   0054  21 FF FF        ld hl, 0xFFFF
+200   0057  C9              ret
+201   0058              
+202   0058              
+203   0058              PUBLIC _context_init
+204   0058              PUBLIC context_init
+205   0058              
+206   0058              ; void context_init(void (*pc)());
+207   0058              _context_init:
+208   0058              context_init:
+209   0058                  ; Copy pc argument to DE
+210   0058  E1              pop hl
+211   0059  D1              pop de
+212   005A  D5              push de
+213   005B  E5              push hl
+214   005C                  ; Swap _context_temp_sp and SP using HL
+215   005C  2A 00 00        ld hl, (_context_temp_sp)
+216   005F  ED 73 00 00     ld (_context_temp_sp), sp
+217   0063  F9              ld sp, hl
+218   0064                  ; Swap _context_temp_bbr and BBR
+219   0064  3A 02 00        ld a, (_context_temp_bbr)
+220   0067  ED 00 F9        in0 b, (BBR)
+221   006A  ED 39 F9        out0 (BBR), a
+222   006D  78              ld a, b
+223   006E  32 02 00        ld (_context_temp_bbr), a
+224   0071                  ; Clear HL
+225   0071  21 00 00        ld hl, 0
+226   0074                  ; Push return address
+227   0074  D5              push de
+228   0075                  ; Push IX
+229   0075  E5              push hl
+230   0076                  ; Push AF, AF'
+231   0076  E5              push hl
+232   0077  E5              push hl
+233   0078                  ; Push BC, DE, HL
+234   0078  E5              push hl
+235   0079  E5              push hl
+236   007A  E5              push hl
+237   007B                  ; Push BC', DE', HL'
+238   007B  E5              push hl
+239   007C  E5              push hl
+240   007D  E5              push hl
+241   007E                  ; Push IY
+242   007E  E5              push hl
+243   007F                  ; Swap _context_temp_bbr and BBR
+244   007F  3A 02 00        ld a, (_context_temp_bbr)
+245   0082  ED 00 F9        in0 b, (BBR)
+246   0085  ED 39 F9        out0 (BBR), a
+247   0088  78              ld a, b
+248   0089  32 02 00        ld (_context_temp_bbr), a
+249   008C                  ; Swap _context_temp_sp and SP using HL
+250   008C  2A 00 00        ld hl, (_context_temp_sp)
+251   008F  ED 73 00 00     ld (_context_temp_sp), sp
+252   0093  F9              ld sp, hl
+253   0094                  ; Return
+254   0094  C9              ret
+255   0095              
+256   0095              
+257   0095              PUBLIC context_save
+258   0095              
+259   0095              context_save:
+260   0095                  ; Pop return address to IX while pushing IX
+261   0095  DD E3           ex (sp), ix
+262   0097                  ; Push AF, AF'
+263   0097  F5              push af
+264   0098  08              ex af,af'
+265   0099  F5              push af
+266   009A                  ; Push BC, DE, HL
+267   009A  C5              push bc
+268   009B  D5              push de
+269   009C  E5              push hl
+270   009D                  ; Push BC', DE', HL'
+271   009D  D9              exx
+272   009E  C5              push bc
+273   009F  D5              push de
+274   00A0  E5              push hl
+275   00A1                  ; Push IY
+276   00A1  FD E5           push iy
+277   00A3                  ; Swap _context_temp_bbr and BBR
+278   00A3  3A 02 00        ld a, (_context_temp_bbr)
+279   00A6  ED 00 F9        in0 b, (BBR)
+280   00A9  ED 39 F9        out0 (BBR), a
+281   00AC  78              ld a, b
+282   00AD  32 02 00        ld (_context_temp_bbr), a
+283   00B0                  ; Swap _context_temp_sp and SP using HL
+284   00B0  2A 00 00        ld hl, (_context_temp_sp)
+285   00B3  ED 73 00 00     ld (_context_temp_sp), sp
+286   00B7  F9              ld sp, hl
+287   00B8                  ; Push return address from IX
+288   00B8  DD E5           push ix
+289   00BA                  ; Return
+290   00BA  C9              ret
+291   00BB              
+292   00BB              
+293   00BB              PUBLIC context_restore
+294   00BB              
+295   00BB              context_restore:
+296   00BB                  ; Pop return address to IX
+297   00BB  DD E1           pop ix
+298   00BD                  ; Swap _context_temp_sp and SP using HL
+299   00BD  2A 00 00        ld hl, (_context_temp_sp)
+300   00C0  ED 73 00 00     ld (_context_temp_sp), sp
+301   00C4  F9              ld sp, hl
+302   00C5                  ; Swap _context_temp_bbr and BBR
+303   00C5  3A 02 00        ld a, (_context_temp_bbr)
+304   00C8  ED 00 F9        in0 b, (BBR)
+305   00CB  ED 39 F9        out0 (BBR), a
+306   00CE  78              ld a, b
+307   00CF  32 02 00        ld (_context_temp_bbr), a
+308   00D2                  ; Pop IY
+309   00D2  FD E1           pop iy
+310   00D4                  ; Pop HL', DE', BC'
+311   00D4  E1              pop hl
+312   00D5  D1              pop de
+313   00D6  C1              pop bc
+314   00D7  D9              exx
+315   00D8                  ; Pop HL, DE, BC
+316   00D8  E1              pop hl
+317   00D9  D1              pop de
+318   00DA  C1              pop bc
+319   00DB                  ; Pop AF', AF
+320   00DB  F1              pop af
+321   00DC  08              ex af,af'
+322   00DD  F1              pop af
+323   00DE                  ; Push return address while popping to IX
+324   00DE  DD E3           ex (sp),ix
+325   00E0                  ; Return
+326   00E0  C9              ret
+327   00E1              
+328   00E1              
+329   00E1              argv:
+330   00E1  00 00           DEFW 0
+331   00E3              
+332   00E3              
+333   00E3              EXTERN _syscall_0
+334   00E3              
+335   00E3              syscall_table:
+336   00E3  00 00           DEFW _syscall_0
+337   00E5  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0105  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0125  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0145  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0165  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0185  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      01A5  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      01C5  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      01E5  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0205  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0225  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0245  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0265  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0285  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      02A5  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      02C5  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+                            DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
+338   02E1              
+339   02E1              SECTION code_ca1
+340   0000              ORG 0xE000
+341   0000              
+342   0000              PUBLIC _context_temp_sp, _context_temp_bbr
+343   0000              
+344   0000              _context_temp_sp:
+345   0000  00 00           DEFW 0
+346   0002              _context_temp_bbr:
+347   0002  00              DEFB 0
+348   0003              
+349   0003              
+350   0003              SECTION code_ba
+351   0000              ORG 0x1000
+352   0000              
+353   0000              SECTION bss_compiler
+354   0000              

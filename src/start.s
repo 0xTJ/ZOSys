@@ -116,9 +116,6 @@ ENDIF
     out0 (BBR), a
     out0 (CBR), a
 
-    ; Initialize heap
-
-
 
 SECTION code_ca0_2
 
@@ -176,10 +173,30 @@ int_prt0:
 syscall:
     ; Load A * 2 to HL
     xor h
-    rla
+    sla a
     rl h
     ld l, a
 
+    ; Add syscall_table to HL
+    add hl, syscall_table
+
+    ; Load function address to HL
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, de
+
+    ; Return with error if HL is 0x0000
+    ld a, 0
+    or l
+    or h
+    jp z, syscall_bad
+
+    ; Tail-call function in HL
+    jp (hl)
+
+syscall_bad:
+    ld hl, 0xFFFF
     ret
 
 
@@ -312,6 +329,12 @@ context_restore:
 argv:
     DEFW 0
 
+
+EXTERN _sys_0
+
+syscall_table:
+    DEFW _sys_0
+    DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
 
 SECTION code_ca1
 ORG 0xE000

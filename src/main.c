@@ -26,7 +26,7 @@ int main(void) {
     heap_init(_malloc_heap, sizeof(_malloc_block));
 
     asci_0_setup();
-    asci_0_puts("Starting ZOSYS\n");
+    asci_0_puts("\nStarting ZOSYS\n");
 
     // Create process information structures
     asci_0_puts("Initializing processes\n");
@@ -56,9 +56,7 @@ int main(void) {
 
     while (1) {
         io_led_output = (a ^= (1 << 4));
-        for (volatile int i = 0; i < 8000; ++i) {
-
-        }
+        cpu_delay_ms(500);
     }
 }
 
@@ -67,12 +65,16 @@ void int0(void) {
 }
 
 void loop(void) {
+    __asm__("ld a, 0\nrst 8");
+    __asm__("ld a, 2\nrst 8");
     while (1) {
         io_led_output = (a ^= (1 << 5));
-        for (volatile int i = 0; i < 8000; ++i) {
-
-        }
+        cpu_delay_ms(500);
     }
+}
+
+void sys_0(void) {
+    asci_0_puts("syscall 0\n");
 }
 
 void int_prt0(void) {
