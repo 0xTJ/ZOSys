@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Z88DK",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${ZCCCFG}/../../include/_DEVELOPMENT/sdcc"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "__CLANG",
+                "__Z180",
+                "__SCZ180"
+            ],
+            "compilerPath": "${ZCCCFG}/../../bin/zcc.exe",
+            "cStandard": "c99",
+            "intelliSenseMode": "${default}"
+        }
+    ],
+    "version": 4
+}
