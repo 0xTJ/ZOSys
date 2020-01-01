@@ -204,7 +204,7 @@
 201   0000              ; Public variables in this module
 202   0000              ;--------------------------------------------------------
 203   0000              	GLOBAL _int_prt0
-204   0000              	GLOBAL _syscall_0
+204   0000              	GLOBAL _sys_0
 205   0000              	GLOBAL _int0
 206   0000              	GLOBAL _main
 207   0000              	GLOBAL __malloc_heap
@@ -1494,9 +1494,9 @@
 1229  00CC  18 EE       	jr	l_loop_00102
 1230  00CE              	SECTION code_compiler
 1231  00CE              ;	---------------------------------
-1232  00CE              ; Function syscall_0
+1232  00CE              ; Function sys_0
 1233  00CE              ; ---------------------------------
-1234  00CE              _syscall_0:
+1234  00CE              _sys_0:
 1235  00CE  21 7A 00    	ld	hl,___str_7
 1236  00D1  E5          	push	hl
 1237  00D2  CD 00 00    	call	_asci_0_puts

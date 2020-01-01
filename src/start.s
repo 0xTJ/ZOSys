@@ -72,7 +72,6 @@ ENDIF
     ; Common Area 0 to fill 0x0000-0x0FFF
     ; Bank Area to fill 0x1000-0x7FFF
     ; Common Area 1 to fill 0x8000-0xFFFF
-    ; All map directly to physical memory
     ld a, #0x81
     out0 (CBAR), a
 

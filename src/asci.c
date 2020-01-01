@@ -20,8 +20,30 @@ void asci_0_puts(char *s) {
     }
 }
 
+void asci_0_put_uc(unsigned char n) {
+    for (signed char i = 2 * sizeof(n) - 1; i >= 0; --i) {
+        char digit = (n >> (i * 4)) & 0xF;
+        if (digit <= 9)
+            digit += '0';
+        else
+            digit += 'A' - 0xA;
+        asci_0_putc(digit);
+    }
+}
+
+void asci_0_put_u(unsigned n) {
+    for (signed char i = 2 * sizeof(n) - 1; i >= 0; --i) {
+        char digit = (n >> (i * 4)) & 0xF;
+        if (digit <= 9)
+            digit += '0';
+        else
+            digit += 'A' - 0xA;
+        asci_0_putc(digit);
+    }
+}
+
 void asci_0_put_ul(unsigned long n) {
-    for (signed char i = 3; i >= 0; --i) {
+    for (signed char i = 2 * sizeof(n) - 1; i >= 0; --i) {
         char digit = (n >> (i * 4)) & 0xF;
         if (digit <= 9)
             digit += '0';
