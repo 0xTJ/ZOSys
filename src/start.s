@@ -1,9 +1,6 @@
 INCLUDE "config_scz180_public.inc"
 EXTERN _main
 
-STACK_TAIL = 0xF000
-KSTACK_TAIL = 0x10000
-
 
 SECTION code_ca0
 ORG 0x0000
@@ -57,7 +54,7 @@ start:
     out0 (ICR), a
 
     ; Initialize Stack Pointer
-    ld hl, #KSTACK_TAIL
+    ld hl, #0x10000
     ld sp, hl
 
     ; Load interrupt vector table location
@@ -80,13 +77,13 @@ ENDIF
     ; ld a, #(0x01000 - 0x1000) >> 12
     ; out0 (BBR), a
 
-    ; Map Common Area 1 at 0x8000 to 0x80000
-    ld a, #(0x80000 - 0x8000) >> 12
+    ; Map Common Area 1 at 0x8000 to 0x81000
+    ld a, #(0x81000 - 0x8000) >> 12
     out0 (CBR), a
 
     ; Copy 28k from 0x01000 to 0x81000
     ld hl, 0x1000
-    ld de, 0x9000
+    ld de, 0x8000
     ld bc, 0x7000
     ldir
 
@@ -104,29 +101,21 @@ ENDIF
     ld bc, 0x7000
     ldir
 
-    ; Common Area 0 to fill 0x0000-0x0FFF
-    ; Bank Area to fill 0x1000-0xEFFF
-    ; Common Area 1 to fill 0xF000-0xFFFF
-    ld a, #0xF1
-    out0 (CBAR), a
-
     ; Make BA and CA1 offset to 0x80000
     ld a, #0x80000 >> 12
     out0 (BBR), a
     out0 (CBR), a
 
+    ; Common Area 0 to fill 0x0000-0x0FFF
+    ; Common Area 1 to fill 0x1000-0xFFFF
+    ld a, #0x11
+    out0 (CBAR), a
+
 
 SECTION code_ca0_2
 
-    ; Setup current and saved SP values
-    ld hl, KSTACK_TAIL
-    ld (_context_temp_sp), hl
-    ld hl, STACK_TAIL
-    ld sp, hl
-
-    ; Setup saved BBR value
-    ld a, 0x80000 >> 12
-    ld (_context_temp_bbr), a
+    ; Setup current SP value
+    ld sp, interrupt_stack_tail
     
     ; Enable Interrupts
     ei
@@ -171,7 +160,7 @@ int_prt0:
 
 syscall:
     ; Load A * 2 to HL
-    xor h
+    ld h, 0
     sla a
     rl h
     ld l, a
@@ -191,8 +180,29 @@ syscall:
     or h
     jp z, syscall_bad
 
-    ; Tail-call function in HL
+    ; Save SP and load
+    ld (syscall_sp), sp
+    ld sp, syscall_stack_tail
+
+    ; Switch to kernel space
+    ld a, 0xF1
+    out0 (CBAR), a
+
+    ; Call function in HL
+    ld de, syscall_ret
+    push de
     jp (hl)
+syscall_ret:
+
+    ; Switch to user space
+    ld a, 0x11
+    out0 (CBAR), a
+
+    ; Restore SP
+    ld sp, (syscall_sp)
+
+    ; Return
+    ret
 
 syscall_bad:
     ld hl, 0xFFFF
@@ -202,6 +212,7 @@ syscall_bad:
 PUBLIC _context_init
 PUBLIC context_init
 
+; Only to be done with interrupts disabled, while in kernel space
 ; void context_init(void (*pc)());
 _context_init:
 context_init:
@@ -210,16 +221,16 @@ context_init:
     pop de
     push de
     push hl
-    ; Swap _context_temp_sp and SP using HL
-    ld hl, (_context_temp_sp)
-    ld (_context_temp_sp), sp
+    ; Copy _context_temp_sp to HL and SP to _context_temp_sp
+    ld hl, (_interrupt_sp)
+    ld (_interrupt_sp), sp
+    ; Use top of reserved user space as stack to prevent overwriting
+    ld sp, nmi_clobberable_tail
+    ; Put kernel out of address space
+    ld a, 0x11
+    out0 (CBAR), a
+    ; Load original _context_temp_sp to SP
     ld sp, hl
-    ; Swap _context_temp_bbr and BBR
-    ld a, (_context_temp_bbr)
-    in0 b, (BBR)
-    out0 (BBR), a
-    ld a, b
-    ld (_context_temp_bbr), a
     ; Clear HL
     ld hl, 0
     ; Push return address
@@ -239,15 +250,15 @@ context_init:
     push hl
     ; Push IY
     push hl
-    ; Swap _context_temp_bbr and BBR
-    ld a, (_context_temp_bbr)
-    in0 b, (BBR)
-    out0 (BBR), a
-    ld a, b
-    ld (_context_temp_bbr), a
-    ; Swap _context_temp_sp and SP using HL
-    ld hl, (_context_temp_sp)
-    ld (_context_temp_sp), sp
+    ; Copy _context_temp_sp to HL and SP to _context_temp_sp
+    ld hl, (_interrupt_sp)
+    ld (_interrupt_sp), sp
+    ; Use top of reserved user space as stack to prevent overwriting
+    ld sp, nmi_clobberable_tail
+    ; Bring kernel into address space
+    ld a, 0xF1
+    out0 (CBAR), a
+    ; Restore original SP
     ld sp, hl
     ; Return
     ret
@@ -255,6 +266,7 @@ context_init:
 
 PUBLIC context_save
 
+; Only to be done with interrupts disabled, while in user space
 context_save:
     ; Pop return address to IX while pushing IX
     ex (sp), ix
@@ -273,16 +285,15 @@ context_save:
     push hl
     ; Push IY
     push iy
-    ; Swap _context_temp_bbr and BBR
-    ld a, (_context_temp_bbr)
-    in0 b, (BBR)
-    out0 (BBR), a
-    ld a, b
-    ld (_context_temp_bbr), a
-    ; Swap _context_temp_sp and SP using HL
-    ld hl, (_context_temp_sp)
-    ld (_context_temp_sp), sp
-    ld sp, hl
+    ; Save SP
+    ld (_interrupt_sp), sp
+    ; Use top of reserved user space as stack to prevent overwriting
+    ld sp, nmi_clobberable_tail
+    ; Bring kernel into address space
+    ld a, 0xF1
+    out0 (CBAR), a
+    ; Use stack at top of kernel space
+    ld sp, interrupt_stack_tail
     ; Push return address from IX
     push ix
     ; Return
@@ -291,19 +302,17 @@ context_save:
 
 PUBLIC context_restore
 
+; Only to be done with interrupts disabled, while in kernel space
 context_restore:
     ; Pop return address to IX
     pop ix
-    ; Swap _context_temp_sp and SP using HL
-    ld hl, (_context_temp_sp)
-    ld (_context_temp_sp), sp
-    ld sp, hl
-    ; Swap _context_temp_bbr and BBR
-    ld a, (_context_temp_bbr)
-    in0 b, (BBR)
-    out0 (BBR), a
-    ld a, b
-    ld (_context_temp_bbr), a
+    ; Use top of reserved user space as stack to prevent overwriting
+    ld sp, nmi_clobberable_tail
+    ; Put kernel out of address space
+    ld a, 0x11
+    out0 (CBAR), a
+    ; Restore stack location
+    ld sp, (_interrupt_sp)
     ; Pop IY
     pop iy
     ; Pop HL', DE', BC'
@@ -330,21 +339,33 @@ argv:
 
 
 EXTERN _sys_0
+EXTERN _sys_1
 
 syscall_table:
     DEFW _sys_0
+    DEFW _sys_1
     DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
 
+
 SECTION code_ca1
-ORG 0xE000
+ORG 0xF000
 
-PUBLIC _context_temp_sp, _context_temp_bbr
+PUBLIC _interrupt_sp
 
-_context_temp_sp:
+_interrupt_sp:
     DEFW 0
-_context_temp_bbr:
-    DEFB 0
+syscall_sp:
+    DEFW 0
 
+syscall_stack:
+    DEFS 0x100
+syscall_stack_tail:
+
+; Used as a stack when no consistent stack will be available
+; SP must always point to a valid stack in case an NMI occurs
+nmi_clobberable:
+    DEFS 0x100
+nmi_clobberable_tail:
 
 SECTION code_ba
 ORG 0x1000
@@ -352,3 +373,7 @@ ORG 0x1000
 SECTION code_compiler
 SECTION data_compiler
 SECTION bss_compiler
+
+; Interrupt stack exists at the top of this section
+interrupt_stack_tail = 0xF000
+

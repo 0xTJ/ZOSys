@@ -46,11 +46,10 @@ int main(void) {
 
     struct process *new_proc = process_new();
     new_proc->sp = (uint16_t) stack2 + 0x1000;
-    new_proc->bbr = context_temp_bbr;
-    context_temp_sp = new_proc->sp;
+    new_proc->cbr = 0x80;
+    interrupt_sp = new_proc->sp;
     context_init(loop);
-    new_proc->sp = context_temp_sp;
-    context_temp_sp = (uint16_t) 0x10000;
+    new_proc->sp = interrupt_sp;
 
     asci_0_puts("Started ZOSYS\n");
 
@@ -66,6 +65,7 @@ void int0(void) {
 
 void loop(void) {
     __asm__("ld a, 0\nrst 8");
+    __asm__("ld a, 1\nrst 8");
     __asm__("ld a, 2\nrst 8");
     while (1) {
         io_led_output = (a ^= (1 << 5));
@@ -75,6 +75,10 @@ void loop(void) {
 
 void sys_0(void) {
     asci_0_puts("syscall 0\n");
+}
+
+void sys_1(void) {
+    asci_0_puts("syscall 1\n");
 }
 
 void int_prt0(void) {
@@ -87,28 +91,10 @@ void int_prt0(void) {
     if (!next_proc) {
         return;
     }
-    // asci_0_puts("Saved SP: ");
-    // asci_0_put_ul(context_temp_sp);
-    // asci_0_putc('\n');
-    // asci_0_puts("Saved BBR: ");
-    // asci_0_put_ul(context_temp_bbr);
-    // asci_0_putc('\n');
-    // asci_0_puts("Saved PC: ");
-    // asci_0_put_ul(((uint16_t *) context_temp_sp)[10]);
-    // asci_0_putc('\n');
-    current_proc->sp = context_temp_sp;
-    current_proc->bbr = context_temp_bbr;
-    context_temp_sp = next_proc->sp;
-    context_temp_bbr = next_proc->bbr;
+    current_proc->sp = interrupt_sp;
+    current_proc->cbr = CBR;
+    interrupt_sp = next_proc->sp;
+    CBR = next_proc->cbr;
     current_proc = next_proc;
-    // asci_0_puts("Restored SP: ");
-    // asci_0_put_ul(context_temp_sp);
-    // asci_0_putc('\n');
-    // asci_0_puts("Restored BBR: ");
-    // asci_0_put_ul(context_temp_bbr);
-    // asci_0_putc('\n');
-    // asci_0_puts("Restored PC: ");
-    // asci_0_put_ul(((uint16_t *) context_temp_sp)[10]);
-    // asci_0_putc('\n');
     io_led_output = (a = ((a & 0xF0) | current_proc->pid));
 }

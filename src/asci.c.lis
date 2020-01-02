@@ -203,244 +203,344 @@
 200   0000              ;--------------------------------------------------------
 201   0000              ; Public variables in this module
 202   0000              ;--------------------------------------------------------
-203   0000              	GLOBAL _asci_0_setup
-204   0000              	GLOBAL _asci_0_putc
-205   0000              	GLOBAL _asci_0_puts
-206   0000              	GLOBAL _asci_0_put_ul
-207   0000              ;--------------------------------------------------------
-208   0000              ; Externals used
+203   0000              	GLOBAL _asci_0_put_u
+204   0000              	GLOBAL _asci_0_put_uc
+205   0000              	GLOBAL _asci_0_setup
+206   0000              	GLOBAL _asci_0_putc
+207   0000              	GLOBAL _asci_0_puts
+208   0000              	GLOBAL _asci_0_put_ul
 209   0000              ;--------------------------------------------------------
-210   0000              	GLOBAL _z180_otdmr_callee
-211   0000              	GLOBAL _z180_otdmr
-212   0000              	GLOBAL _z180_otimr_callee
-213   0000              	GLOBAL _z180_otimr
-214   0000              	GLOBAL _z180_otdr_callee
-215   0000              	GLOBAL _z180_otdr
-216   0000              	GLOBAL _z180_otir_callee
-217   0000              	GLOBAL _z180_otir
-218   0000              	GLOBAL _z180_outp_callee
-219   0000              	GLOBAL _z180_outp
-220   0000              	GLOBAL _z180_indr_callee
-221   0000              	GLOBAL _z180_indr
-222   0000              	GLOBAL _z180_inir_callee
-223   0000              	GLOBAL _z180_inir
-224   0000              	GLOBAL _z180_inp_fastcall
-225   0000              	GLOBAL _z180_inp
-226   0000              	GLOBAL _z180_set_int_state_fastcall
-227   0000              	GLOBAL _z180_set_int_state
-228   0000              	GLOBAL _z180_get_int_state
-229   0000              	GLOBAL _z180_delay_tstate_fastcall
-230   0000              	GLOBAL _z180_delay_tstate
-231   0000              	GLOBAL _z180_delay_ms_fastcall
-232   0000              	GLOBAL _z180_delay_ms
-233   0000              	GLOBAL _im2_remove_generic_callback_callee
-234   0000              	GLOBAL _im2_remove_generic_callback
-235   0000              	GLOBAL _im2_prepend_generic_callback_callee
-236   0000              	GLOBAL _im2_prepend_generic_callback
-237   0000              	GLOBAL _im2_append_generic_callback_callee
-238   0000              	GLOBAL _im2_append_generic_callback
-239   0000              	GLOBAL _im2_create_generic_isr_8080_callee
-240   0000              	GLOBAL _im2_create_generic_isr_8080
-241   0000              	GLOBAL _im2_create_generic_isr_callee
-242   0000              	GLOBAL _im2_create_generic_isr
-243   0000              	GLOBAL _im2_install_isr_callee
-244   0000              	GLOBAL _im2_install_isr
-245   0000              	GLOBAL _im2_init_fastcall
-246   0000              	GLOBAL _im2_init
-247   0000              ;--------------------------------------------------------
-248   0000              ; special function registers
+210   0000              ; Externals used
+211   0000              ;--------------------------------------------------------
+212   0000              	GLOBAL _z180_otdmr_callee
+213   0000              	GLOBAL _z180_otdmr
+214   0000              	GLOBAL _z180_otimr_callee
+215   0000              	GLOBAL _z180_otimr
+216   0000              	GLOBAL _z180_otdr_callee
+217   0000              	GLOBAL _z180_otdr
+218   0000              	GLOBAL _z180_otir_callee
+219   0000              	GLOBAL _z180_otir
+220   0000              	GLOBAL _z180_outp_callee
+221   0000              	GLOBAL _z180_outp
+222   0000              	GLOBAL _z180_indr_callee
+223   0000              	GLOBAL _z180_indr
+224   0000              	GLOBAL _z180_inir_callee
+225   0000              	GLOBAL _z180_inir
+226   0000              	GLOBAL _z180_inp_fastcall
+227   0000              	GLOBAL _z180_inp
+228   0000              	GLOBAL _z180_set_int_state_fastcall
+229   0000              	GLOBAL _z180_set_int_state
+230   0000              	GLOBAL _z180_get_int_state
+231   0000              	GLOBAL _z180_delay_tstate_fastcall
+232   0000              	GLOBAL _z180_delay_tstate
+233   0000              	GLOBAL _z180_delay_ms_fastcall
+234   0000              	GLOBAL _z180_delay_ms
+235   0000              	GLOBAL _im2_remove_generic_callback_callee
+236   0000              	GLOBAL _im2_remove_generic_callback
+237   0000              	GLOBAL _im2_prepend_generic_callback_callee
+238   0000              	GLOBAL _im2_prepend_generic_callback
+239   0000              	GLOBAL _im2_append_generic_callback_callee
+240   0000              	GLOBAL _im2_append_generic_callback
+241   0000              	GLOBAL _im2_create_generic_isr_8080_callee
+242   0000              	GLOBAL _im2_create_generic_isr_8080
+243   0000              	GLOBAL _im2_create_generic_isr_callee
+244   0000              	GLOBAL _im2_create_generic_isr
+245   0000              	GLOBAL _im2_install_isr_callee
+246   0000              	GLOBAL _im2_install_isr
+247   0000              	GLOBAL _im2_init_fastcall
+248   0000              	GLOBAL _im2_init
 249   0000              ;--------------------------------------------------------
-250   0000              defc _CNTLA0	=	0x00c0
-251   0000              defc _CNTLA1	=	0x00c1
-252   0000              defc _CNTLB0	=	0x00c2
-253   0000              defc _CNTLB1	=	0x00c3
-254   0000              defc _STAT0	=	0x00c4
-255   0000              defc _STAT1	=	0x00c5
-256   0000              defc _TDR0	=	0x00c6
-257   0000              defc _TDR1	=	0x00c7
-258   0000              defc _RDR0	=	0x00c8
-259   0000              defc _RDR1	=	0x00c9
-260   0000              defc _ASEXT0	=	0x00d2
-261   0000              defc _ASEXT1	=	0x00d3
-262   0000              defc _ASTC0L	=	0x00da
-263   0000              defc _ASTC0H	=	0x00db
-264   0000              defc _ASTC1L	=	0x00dc
-265   0000              defc _ASTC1H	=	0x00dd
-266   0000              defc _CNTR	=	0x00ca
-267   0000              defc _TRDR	=	0x00cb
-268   0000              defc _TMDR0L	=	0x00cc
-269   0000              defc _TMDR0H	=	0x00cd
-270   0000              defc _RLDR0L	=	0x00ce
-271   0000              defc _RLDR0H	=	0x00cf
-272   0000              defc _TCR	=	0x00d0
-273   0000              defc _TMDR1L	=	0x00d4
-274   0000              defc _TMDR1H	=	0x00d5
-275   0000              defc _RLDR1L	=	0x00d6
-276   0000              defc _RLDR1H	=	0x00d7
-277   0000              defc _FRC	=	0x00d8
-278   0000              defc _CMR	=	0x00de
-279   0000              defc _CCR	=	0x00df
-280   0000              defc _SAR0L	=	0x00e0
-281   0000              defc _SAR0H	=	0x00e1
-282   0000              defc _SAR0B	=	0x00e2
-283   0000              defc _DAR0L	=	0x00e3
-284   0000              defc _DAR0H	=	0x00e4
-285   0000              defc _DAR0B	=	0x00e5
-286   0000              defc _BCR0L	=	0x00e6
-287   0000              defc _BCR0H	=	0x00e7
-288   0000              defc _MAR1L	=	0x00e8
-289   0000              defc _MAR1H	=	0x00e9
-290   0000              defc _MAR1B	=	0x00ea
-291   0000              defc _IAR1L	=	0x00eb
-292   0000              defc _IAR1H	=	0x00ec
-293   0000              defc _IAR1B	=	0x00ed
-294   0000              defc _BCR1L	=	0x00ee
-295   0000              defc _BCR1H	=	0x00ef
-296   0000              defc _DSTAT	=	0x00f0
-297   0000              defc _DMODE	=	0x00f1
-298   0000              defc _DCNTL	=	0x00f2
-299   0000              defc _IL	=	0x00f3
-300   0000              defc _ITC	=	0x00f4
-301   0000              defc _RCR	=	0x00f6
-302   0000              defc _CBR	=	0x00f8
-303   0000              defc _BBR	=	0x00f9
-304   0000              defc _CBAR	=	0x00fa
-305   0000              defc _OMCR	=	0x00fe
-306   0000              defc _ICR	=	0x003f
-307   0000              ;--------------------------------------------------------
-308   0000              ; ram data
+250   0000              ; special function registers
+251   0000              ;--------------------------------------------------------
+252   0000              defc _CNTLA0	=	0x00c0
+253   0000              defc _CNTLA1	=	0x00c1
+254   0000              defc _CNTLB0	=	0x00c2
+255   0000              defc _CNTLB1	=	0x00c3
+256   0000              defc _STAT0	=	0x00c4
+257   0000              defc _STAT1	=	0x00c5
+258   0000              defc _TDR0	=	0x00c6
+259   0000              defc _TDR1	=	0x00c7
+260   0000              defc _RDR0	=	0x00c8
+261   0000              defc _RDR1	=	0x00c9
+262   0000              defc _ASEXT0	=	0x00d2
+263   0000              defc _ASEXT1	=	0x00d3
+264   0000              defc _ASTC0L	=	0x00da
+265   0000              defc _ASTC0H	=	0x00db
+266   0000              defc _ASTC1L	=	0x00dc
+267   0000              defc _ASTC1H	=	0x00dd
+268   0000              defc _CNTR	=	0x00ca
+269   0000              defc _TRDR	=	0x00cb
+270   0000              defc _TMDR0L	=	0x00cc
+271   0000              defc _TMDR0H	=	0x00cd
+272   0000              defc _RLDR0L	=	0x00ce
+273   0000              defc _RLDR0H	=	0x00cf
+274   0000              defc _TCR	=	0x00d0
+275   0000              defc _TMDR1L	=	0x00d4
+276   0000              defc _TMDR1H	=	0x00d5
+277   0000              defc _RLDR1L	=	0x00d6
+278   0000              defc _RLDR1H	=	0x00d7
+279   0000              defc _FRC	=	0x00d8
+280   0000              defc _CMR	=	0x00de
+281   0000              defc _CCR	=	0x00df
+282   0000              defc _SAR0L	=	0x00e0
+283   0000              defc _SAR0H	=	0x00e1
+284   0000              defc _SAR0B	=	0x00e2
+285   0000              defc _DAR0L	=	0x00e3
+286   0000              defc _DAR0H	=	0x00e4
+287   0000              defc _DAR0B	=	0x00e5
+288   0000              defc _BCR0L	=	0x00e6
+289   0000              defc _BCR0H	=	0x00e7
+290   0000              defc _MAR1L	=	0x00e8
+291   0000              defc _MAR1H	=	0x00e9
+292   0000              defc _MAR1B	=	0x00ea
+293   0000              defc _IAR1L	=	0x00eb
+294   0000              defc _IAR1H	=	0x00ec
+295   0000              defc _IAR1B	=	0x00ed
+296   0000              defc _BCR1L	=	0x00ee
+297   0000              defc _BCR1H	=	0x00ef
+298   0000              defc _DSTAT	=	0x00f0
+299   0000              defc _DMODE	=	0x00f1
+300   0000              defc _DCNTL	=	0x00f2
+301   0000              defc _IL	=	0x00f3
+302   0000              defc _ITC	=	0x00f4
+303   0000              defc _RCR	=	0x00f6
+304   0000              defc _CBR	=	0x00f8
+305   0000              defc _BBR	=	0x00f9
+306   0000              defc _CBAR	=	0x00fa
+307   0000              defc _OMCR	=	0x00fe
+308   0000              defc _ICR	=	0x003f
 309   0000              ;--------------------------------------------------------
-310   0000              	SECTION bss_compiler
+310   0000              ; ram data
 311   0000              ;--------------------------------------------------------
-312   0000              ; ram data
+312   0000              	SECTION bss_compiler
 313   0000              ;--------------------------------------------------------
-314   0000              
-315   0000              IF 0
+314   0000              ; ram data
+315   0000              ;--------------------------------------------------------
 316   0000              
-317   0000              ; .area _INITIALIZED removed by z88dk
+317   0000              IF 0
 318   0000              
-319   0000              
-320   0000              ENDIF
+319   0000              ; .area _INITIALIZED removed by z88dk
+320   0000              
 321   0000              
-322   0000              ;--------------------------------------------------------
-323   0000              ; absolute external ram data
+322   0000              ENDIF
+323   0000              
 324   0000              ;--------------------------------------------------------
-325   0000              	SECTION IGNORE
+325   0000              ; absolute external ram data
 326   0000              ;--------------------------------------------------------
-327   0000              ; global & static initialisations
+327   0000              	SECTION IGNORE
 328   0000              ;--------------------------------------------------------
-329   0000              	SECTION code_crt_init
+329   0000              ; global & static initialisations
 330   0000              ;--------------------------------------------------------
-331   0000              ; Home
+331   0000              	SECTION code_crt_init
 332   0000              ;--------------------------------------------------------
-333   0000              	SECTION IGNORE
+333   0000              ; Home
 334   0000              ;--------------------------------------------------------
-335   0000              ; code
+335   0000              	SECTION IGNORE
 336   0000              ;--------------------------------------------------------
-337   0000              	SECTION code_compiler
-338   0000              ;	---------------------------------
-339   0000              ; Function asci_0_setup
-340   0000              ; ---------------------------------
-341   0000              _asci_0_setup:
-342   0000  3E 34       	ld	a,0x34
-343   0002  ED 39 C0    	out0	(_CNTLA0), a
-344   0005  3E 20       	ld	a,0x20
-345   0007  ED 39 C2    	out0	(_CNTLB0), a
-346   000A  C9          	ret
-347   000B              	SECTION code_compiler
-348   000B              ;	---------------------------------
-349   000B              ; Function asci_0_putc
-350   000B              ; ---------------------------------
-351   000B              _asci_0_putc:
-352   000B  DD E5       	push	ix
-353   000D  DD 21 00 00 	ld	ix,0
-354   0011  DD 39       	add	ix,sp
-355   0013              l_asci_0_putc_00101:
-356   0013  ED 38 C4    	in0	a, (_STAT0)
-357   0016  CB 4F       	bit	1, a
-358   0018  28 F9       	jr	Z,l_asci_0_putc_00101
-359   001A  DD 7E 04    	ld	a,(ix+4)
-360   001D  ED 39 C6    	out0	(_TDR0), a
-361   0020  DD E1       	pop	ix
-362   0022  C9          	ret
-363   0023              	SECTION code_compiler
-364   0023              ;	---------------------------------
-365   0023              ; Function asci_0_puts
-366   0023              ; ---------------------------------
-367   0023              _asci_0_puts:
-368   0023  DD E5       	push	ix
-369   0025  DD 21 00 00 	ld	ix,0
-370   0029  DD 39       	add	ix,sp
-371   002B  DD 4E 04    	ld	c,(ix+4)
-372   002E  DD 46 05    	ld	b,(ix+5)
-373   0031              l_asci_0_puts_00101:
-374   0031  0A          	ld	a, (bc)
-375   0032  B7          	or	a, a
-376   0033  28 0B       	jr	Z,l_asci_0_puts_00104
-377   0035  03          	inc	bc
-378   0036  C5          	push	bc
-379   0037  F5          	push	af
-380   0038  33          	inc	sp
-381   0039  CD 0B 00    	call	_asci_0_putc
-382   003C  33          	inc	sp
-383   003D  C1          	pop	bc
-384   003E  18 F1       	jr	l_asci_0_puts_00101
-385   0040              l_asci_0_puts_00104:
-386   0040  DD E1       	pop	ix
-387   0042  C9          	ret
-388   0043              	SECTION code_compiler
-389   0043              ;	---------------------------------
-390   0043              ; Function asci_0_put_ul
-391   0043              ; ---------------------------------
-392   0043              _asci_0_put_ul:
-393   0043  DD E5       	push	ix
-394   0045  DD 21 00 00 	ld	ix,0
-395   0049  DD 39       	add	ix,sp
-396   004B  3B          	dec	sp
-397   004C  DD 36 FF 03 	ld	(ix-1),0x03
-398   0050              l_asci_0_put_ul_00106:
-399   0050  DD CB FF 7E 	bit	7,(ix-1)
-400   0054  20 3C       	jr	NZ,l_asci_0_put_ul_00108
-401   0056  DD 7E FF    	ld	a,(ix-1)
-402   0059  87          	add	a, a
-403   005A  87          	add	a, a
-404   005B  DD 4E 04    	ld	c,(ix+4)
-405   005E  DD 46 05    	ld	b,(ix+5)
-406   0061  DD 5E 06    	ld	e,(ix+6)
-407   0064  DD 56 07    	ld	d,(ix+7)
-408   0067  3C          	inc	a
-409   0068  18 08       	jr	l_asci_0_put_ul_00127
-410   006A              l_asci_0_put_ul_00126:
-411   006A  CB 3A       	srl	d
-412   006C  CB 1B       	rr	e
-413   006E  CB 18       	rr	b
-414   0070  CB 19       	rr	c
-415   0072              l_asci_0_put_ul_00127:
-416   0072  3D          	dec	a
-417   0073  20 F5       	jr	NZ, l_asci_0_put_ul_00126
-418   0075  79          	ld	a, c
-419   0076  E6 0F       	and	a,0x0f
-420   0078  47          	ld	b, a
-421   0079  48          	ld	c, b
-422   007A  3E 09       	ld	a,0x09
-423   007C  90          	sub	a, b
-424   007D  38 05       	jr	C,l_asci_0_put_ul_00102
-425   007F  79          	ld	a, c
-426   0080  C6 30       	add	a,0x30
-427   0082  18 03       	jr	l_asci_0_put_ul_00103
-428   0084              l_asci_0_put_ul_00102:
-429   0084  79          	ld	a, c
-430   0085  C6 37       	add	a,0x37
-431   0087              l_asci_0_put_ul_00103:
-432   0087  F5          	push	af
-433   0088  33          	inc	sp
-434   0089  CD 0B 00    	call	_asci_0_putc
-435   008C  33          	inc	sp
-436   008D  DD 35 FF    	dec	(ix-1)
-437   0090  18 BE       	jr	l_asci_0_put_ul_00106
-438   0092              l_asci_0_put_ul_00108:
-439   0092  33          	inc	sp
-440   0093  DD E1       	pop	ix
-441   0095  C9          	ret
-442   0096              	SECTION IGNORE
-443   0000              
+337   0000              ; code
+338   0000              ;--------------------------------------------------------
+339   0000              	SECTION code_compiler
+340   0000              ;	---------------------------------
+341   0000              ; Function asci_0_setup
+342   0000              ; ---------------------------------
+343   0000              _asci_0_setup:
+344   0000  3E 34       	ld	a,0x34
+345   0002  ED 39 C0    	out0	(_CNTLA0), a
+346   0005  3E 20       	ld	a,0x20
+347   0007  ED 39 C2    	out0	(_CNTLB0), a
+348   000A  C9          	ret
+349   000B              	SECTION code_compiler
+350   000B              ;	---------------------------------
+351   000B              ; Function asci_0_putc
+352   000B              ; ---------------------------------
+353   000B              _asci_0_putc:
+354   000B  DD E5       	push	ix
+355   000D  DD 21 00 00 	ld	ix,0
+356   0011  DD 39       	add	ix,sp
+357   0013              l_asci_0_putc_00101:
+358   0013  ED 38 C4    	in0	a, (_STAT0)
+359   0016  CB 4F       	bit	1, a
+360   0018  28 F9       	jr	Z,l_asci_0_putc_00101
+361   001A  DD 7E 04    	ld	a,(ix+4)
+362   001D  ED 39 C6    	out0	(_TDR0), a
+363   0020  DD E1       	pop	ix
+364   0022  C9          	ret
+365   0023              	SECTION code_compiler
+366   0023              ;	---------------------------------
+367   0023              ; Function asci_0_puts
+368   0023              ; ---------------------------------
+369   0023              _asci_0_puts:
+370   0023  DD E5       	push	ix
+371   0025  DD 21 00 00 	ld	ix,0
+372   0029  DD 39       	add	ix,sp
+373   002B  DD 4E 04    	ld	c,(ix+4)
+374   002E  DD 46 05    	ld	b,(ix+5)
+375   0031              l_asci_0_puts_00101:
+376   0031  0A          	ld	a, (bc)
+377   0032  B7          	or	a, a
+378   0033  28 0B       	jr	Z,l_asci_0_puts_00104
+379   0035  03          	inc	bc
+380   0036  C5          	push	bc
+381   0037  F5          	push	af
+382   0038  33          	inc	sp
+383   0039  CD 0B 00    	call	_asci_0_putc
+384   003C  33          	inc	sp
+385   003D  C1          	pop	bc
+386   003E  18 F1       	jr	l_asci_0_puts_00101
+387   0040              l_asci_0_puts_00104:
+388   0040  DD E1       	pop	ix
+389   0042  C9          	ret
+390   0043              	SECTION code_compiler
+391   0043              ;	---------------------------------
+392   0043              ; Function asci_0_put_uc
+393   0043              ; ---------------------------------
+394   0043              _asci_0_put_uc:
+395   0043  DD E5       	push	ix
+396   0045  DD 21 00 00 	ld	ix,0
+397   0049  DD 39       	add	ix,sp
+398   004B  0E 01       	ld	c,0x01
+399   004D              l_asci_0_put_uc_00106:
+400   004D  CB 79       	bit	7, c
+401   004F  20 2B       	jr	NZ,l_asci_0_put_uc_00108
+402   0051  79          	ld	a, c
+403   0052  87          	add	a, a
+404   0053  87          	add	a, a
+405   0054  DD 46 04    	ld	b,(ix+4)
+406   0057  3C          	inc	a
+407   0058  18 02       	jr	l_asci_0_put_uc_00127
+408   005A              l_asci_0_put_uc_00126:
+409   005A  CB 38       	srl	b
+410   005C              l_asci_0_put_uc_00127:
+411   005C  3D          	dec	a
+412   005D  20 FB       	jr	NZ, l_asci_0_put_uc_00126
+413   005F  78          	ld	a, b
+414   0060  E6 0F       	and	a,0x0f
+415   0062  5F          	ld	e, a
+416   0063  43          	ld	b, e
+417   0064  3E 09       	ld	a,0x09
+418   0066  93          	sub	a, e
+419   0067  38 05       	jr	C,l_asci_0_put_uc_00102
+420   0069  78          	ld	a, b
+421   006A  C6 30       	add	a,0x30
+422   006C  18 03       	jr	l_asci_0_put_uc_00103
+423   006E              l_asci_0_put_uc_00102:
+424   006E  78          	ld	a, b
+425   006F  C6 37       	add	a,0x37
+426   0071              l_asci_0_put_uc_00103:
+427   0071  C5          	push	bc
+428   0072  F5          	push	af
+429   0073  33          	inc	sp
+430   0074  CD 0B 00    	call	_asci_0_putc
+431   0077  33          	inc	sp
+432   0078  C1          	pop	bc
+433   0079  0D          	dec	c
+434   007A  18 D1       	jr	l_asci_0_put_uc_00106
+435   007C              l_asci_0_put_uc_00108:
+436   007C  DD E1       	pop	ix
+437   007E  C9          	ret
+438   007F              	SECTION code_compiler
+439   007F              ;	---------------------------------
+440   007F              ; Function asci_0_put_u
+441   007F              ; ---------------------------------
+442   007F              _asci_0_put_u:
+443   007F  DD E5       	push	ix
+444   0081  DD 21 00 00 	ld	ix,0
+445   0085  DD 39       	add	ix,sp
+446   0087  0E 03       	ld	c,0x03
+447   0089              l_asci_0_put_u_00106:
+448   0089  CB 79       	bit	7, c
+449   008B  20 30       	jr	NZ,l_asci_0_put_u_00108
+450   008D  79          	ld	a, c
+451   008E  87          	add	a, a
+452   008F  87          	add	a, a
+453   0090  DD 46 04    	ld	b,(ix+4)
+454   0093  DD 5E 05    	ld	e,(ix+5)
+455   0096  3C          	inc	a
+456   0097  18 04       	jr	l_asci_0_put_u_00127
+457   0099              l_asci_0_put_u_00126:
+458   0099  CB 3B       	srl	e
+459   009B  CB 18       	rr	b
+460   009D              l_asci_0_put_u_00127:
+461   009D  3D          	dec	a
+462   009E  20 F9       	jr	NZ, l_asci_0_put_u_00126
+463   00A0  78          	ld	a, b
+464   00A1  E6 0F       	and	a,0x0f
+465   00A3  5F          	ld	e, a
+466   00A4  43          	ld	b, e
+467   00A5  3E 09       	ld	a,0x09
+468   00A7  93          	sub	a, e
+469   00A8  38 05       	jr	C,l_asci_0_put_u_00102
+470   00AA  78          	ld	a, b
+471   00AB  C6 30       	add	a,0x30
+472   00AD  18 03       	jr	l_asci_0_put_u_00103
+473   00AF              l_asci_0_put_u_00102:
+474   00AF  78          	ld	a, b
+475   00B0  C6 37       	add	a,0x37
+476   00B2              l_asci_0_put_u_00103:
+477   00B2  C5          	push	bc
+478   00B3  F5          	push	af
+479   00B4  33          	inc	sp
+480   00B5  CD 0B 00    	call	_asci_0_putc
+481   00B8  33          	inc	sp
+482   00B9  C1          	pop	bc
+483   00BA  0D          	dec	c
+484   00BB  18 CC       	jr	l_asci_0_put_u_00106
+485   00BD              l_asci_0_put_u_00108:
+486   00BD  DD E1       	pop	ix
+487   00BF  C9          	ret
+488   00C0              	SECTION code_compiler
+489   00C0              ;	---------------------------------
+490   00C0              ; Function asci_0_put_ul
+491   00C0              ; ---------------------------------
+492   00C0              _asci_0_put_ul:
+493   00C0  DD E5       	push	ix
+494   00C2  DD 21 00 00 	ld	ix,0
+495   00C6  DD 39       	add	ix,sp
+496   00C8  3B          	dec	sp
+497   00C9  DD 36 FF 07 	ld	(ix-1),0x07
+498   00CD              l_asci_0_put_ul_00106:
+499   00CD  DD CB FF 7E 	bit	7,(ix-1)
+500   00D1  20 3C       	jr	NZ,l_asci_0_put_ul_00108
+501   00D3  DD 7E FF    	ld	a,(ix-1)
+502   00D6  87          	add	a, a
+503   00D7  87          	add	a, a
+504   00D8  DD 4E 04    	ld	c,(ix+4)
+505   00DB  DD 46 05    	ld	b,(ix+5)
+506   00DE  DD 5E 06    	ld	e,(ix+6)
+507   00E1  DD 56 07    	ld	d,(ix+7)
+508   00E4  3C          	inc	a
+509   00E5  18 08       	jr	l_asci_0_put_ul_00127
+510   00E7              l_asci_0_put_ul_00126:
+511   00E7  CB 3A       	srl	d
+512   00E9  CB 1B       	rr	e
+513   00EB  CB 18       	rr	b
+514   00ED  CB 19       	rr	c
+515   00EF              l_asci_0_put_ul_00127:
+516   00EF  3D          	dec	a
+517   00F0  20 F5       	jr	NZ, l_asci_0_put_ul_00126
+518   00F2  79          	ld	a, c
+519   00F3  E6 0F       	and	a,0x0f
+520   00F5  47          	ld	b, a
+521   00F6  48          	ld	c, b
+522   00F7  3E 09       	ld	a,0x09
+523   00F9  90          	sub	a, b
+524   00FA  38 05       	jr	C,l_asci_0_put_ul_00102
+525   00FC  79          	ld	a, c
+526   00FD  C6 30       	add	a,0x30
+527   00FF  18 03       	jr	l_asci_0_put_ul_00103
+528   0101              l_asci_0_put_ul_00102:
+529   0101  79          	ld	a, c
+530   0102  C6 37       	add	a,0x37
+531   0104              l_asci_0_put_ul_00103:
+532   0104  F5          	push	af
+533   0105  33          	inc	sp
+534   0106  CD 0B 00    	call	_asci_0_putc
+535   0109  33          	inc	sp
+536   010A  DD 35 FF    	dec	(ix-1)
+537   010D  18 BE       	jr	l_asci_0_put_ul_00106
+538   010F              l_asci_0_put_ul_00108:
+539   010F  33          	inc	sp
+540   0110  DD E1       	pop	ix
+541   0112  C9          	ret
+542   0113              	SECTION IGNORE
+543   0000              

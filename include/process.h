@@ -9,7 +9,7 @@ struct process {
     p_list_t list;
     pid_t pid;
     uint16_t sp;
-    uint8_t bbr;
+    uint8_t cbr;
 };
 
 extern volatile p_list_t proc_list;

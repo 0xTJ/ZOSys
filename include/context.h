@@ -17,8 +17,7 @@ struct context_stack {
     uint16_t pc;
 };
 
-extern volatile uint16_t context_temp_sp;
-extern volatile uint8_t context_temp_bbr;
+extern volatile uint16_t interrupt_sp;
 
 extern void context_init(void (*pc)());
 
