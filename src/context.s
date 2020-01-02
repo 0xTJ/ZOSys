@@ -1,6 +1,6 @@
 INCLUDE "config_scz180_private.inc"
 
-SECTION code_ca0_2
+SECTION code_rom_resident
 
 PUBLIC _context_init
 

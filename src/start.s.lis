@@ -1694,73 +1694,73 @@
 44    0068              SECTION code_crt_init
 45    0000              
 46    0000              start:
-47    0000  F3              di
-48    0001  ED 56           im 1
-49    0003              
-50    0003                  ; Relocate internal registers
-51    0003  3E C0           ld a,__IO_BASE_ADDRESS
-52    0005  ED 39 3F        out0 (ICR), a
-53    0008              
-54    0008                  ; Initialize Stack Pointer
-55    0008  21 00 00        ld hl,0x10000
-56    000B  F9              ld sp, hl
-57    000C              
-58    000C                  ; Load interrupt vector table location
-59    000C              IF vector_table & 0x1F
-60    000C                  ERROR "Vector table not aligned at 0x20 boundary"
-61    000C              ENDIF
-62    000C  3E 40           ld a, +(vector_table & 0xE0)
-63    000E  ED 39 F3        out0 (IL), a
-64    0011  3E 00           ld a, +((vector_table >> 8) & 0xFF)
-65    0013  ED 47           ld i, a
-66    0015              
-67    0015                  ; Common Area 0 to fill 0x0000-0x0FFF
-68    0015                  ; Bank Area to fill 0x1000-0x7FFF
-69    0015                  ; Common Area 1 to fill 0x8000-0xFFFF
-70    0015  3E 81           ld a,0x81
-71    0017  ED 39 FA        out0 (CBAR), a
-72    001A              
-73    001A                  ; Map Bank Area at 0x1000 to 0x01000
-74    001A                  ; Is redundant
-75    001A                  ; ld a, #(0x01000 - 0x1000) >> 12
-76    001A                  ; out0 (BBR), a
-77    001A              
-78    001A                  ; Map Common Area 1 at 0x8000 to 0x81000
-79    001A  3E 79           ld a, +(0x81000 - 0x8000) >> 12
-80    001C  ED 39 F8        out0 (CBR), a
-81    001F              
-82    001F                  ; Copy 28k from 0x01000 to 0x81000
-83    001F  21 00 10        ld hl, 0x1000
-84    0022  11 00 80        ld de, 0x8000
-85    0025  01 00 70        ld bc, 0x7000
-86    0028  ED B0           ldir
-87    002A              
-88    002A                  ; Map Bank Area at 0x1000 to 0x08000
-89    002A  3E 07           ld a, +(0x08000 - 0x1000) >> 12
-90    002C  ED 39 F9        out0 (BBR), a
-91    002F              
-92    002F                  ; Map Common Area 1 at 0x8000 to 0x88000
-93    002F  3E 80           ld a, +(0x88000 - 0x8000) >> 12
-94    0031  ED 39 F8        out0 (CBR), a
-95    0034              
-96    0034                  ; Copy 28k from 0x08000 to 0x88000
-97    0034  21 00 10        ld hl, 0x1000
-98    0037  11 00 80        ld de, 0x8000
-99    003A  01 00 70        ld bc, 0x7000
-100   003D  ED B0           ldir
-101   003F              
-102   003F                  ; Make BA and CA1 offset to 0x80000
-103   003F  3E 80           ld a,0x80000 >> 12
-104   0041  ED 39 F9        out0 (BBR), a
-105   0044  ED 39 F8        out0 (CBR), a
-106   0047              
-107   0047                  ; Common Area 0 to fill 0x0000-0x0FFF
-108   0047                  ; Common Area 1 to fill 0x1000-0xFFFF
-109   0047  3E 11           ld a,0x11
-110   0049  ED 39 FA        out0 (CBAR), a
-111   004C              
-112   004C              
-113   004C              SECTION code_ca0_2
+47    0000                  ; Initialize Stack Pointer
+48    0000                  ; Until the proper stack is setup, the top of memory is used as stack
+49    0000                  ; There must always be a valid stack to allow for NMI
+50    0000  31 00 00        ld sp, 0x10000
+51    0003              
+52    0003  ED 56           im 1
+53    0005              
+54    0005                  ; Relocate internal registers
+55    0005  3E C0           ld a, __IO_BASE_ADDRESS
+56    0007  ED 39 3F        out0 (ICR), a
+57    000A              
+58    000A                  ; Load interrupt vector table location
+59    000A              IF vector_table & 0x1F
+60    000A                  ERROR "Vector table not aligned at 0x20 boundary"
+61    000A              ENDIF
+62    000A  3E 40           ld a, vector_table & 0xE0
+63    000C  ED 39 F3        out0 (IL), a
+64    000F  3E 00           ld a, [vector_table >> 8] & 0xFF
+65    0011  ED 47           ld i, a
+66    0013              
+67    0013                  ; Common Area 0 to fill 0x0000-0x0FFF
+68    0013                  ; Bank Area to fill 0x1000-0x7FFF
+69    0013                  ; Common Area 1 to fill 0x8000-0xFFFF
+70    0013  3E 81           ld a, 0x81
+71    0015  ED 39 FA        out0 (CBAR), a
+72    0018              
+73    0018                  ; Map Bank Area at 0x1000 to 0x01000
+74    0018                  ; Is redundant
+75    0018                  ; ld a, #(0x01000 - 0x1000) >> 12
+76    0018                  ; out0 (BBR), a
+77    0018              
+78    0018                  ; Map Common Area 1 at 0x8000 to 0x81000
+79    0018  3E 79           ld a, [0x81000 - 0x8000] >> 12
+80    001A  ED 39 F8        out0 (CBR), a
+81    001D              
+82    001D                  ; Copy 28k from 0x01000 to 0x81000
+83    001D  21 00 10        ld hl, 0x1000
+84    0020  11 00 80        ld de, 0x8000
+85    0023  01 00 70        ld bc, 0x7000
+86    0026  ED B0           ldir
+87    0028              
+88    0028                  ; Map Bank Area at 0x1000 to 0x08000
+89    0028  3E 07           ld a, [0x08000 - 0x1000] >> 12
+90    002A  ED 39 F9        out0 (BBR), a
+91    002D              
+92    002D                  ; Map Common Area 1 at 0x8000 to 0x88000
+93    002D  3E 80           ld a, [0x88000 - 0x8000] >> 12
+94    002F  ED 39 F8        out0 (CBR), a
+95    0032              
+96    0032                  ; Copy 28k from 0x08000 to 0x88000
+97    0032  21 00 10        ld hl, 0x1000
+98    0035  11 00 80        ld de, 0x8000
+99    0038  01 00 70        ld bc, 0x7000
+100   003B  ED B0           ldir
+101   003D              
+102   003D                  ; Make BA and CA1 offset to 0x80000
+103   003D  3E 80           ld a, 0x80000 >> 12
+104   003F  ED 39 F9        out0 (BBR), a
+105   0042  ED 39 F8        out0 (CBR), a
+106   0045              
+107   0045                  ; Common Area 0 to fill 0x0000-0x0FFF
+108   0045                  ; Common Area 1 to fill 0x1000-0xFFFF
+109   0045  3E 11           ld a, 0x11
+110   0047  ED 39 FA        out0 (CBAR), a
+111   004A              
+112   004A              
+113   004A              SECTION code_rom_resident
 114   0000              
 115   0000                  ; Setup current SP value
 116   0000  31 00 00        ld sp, interrupt_stack_tail

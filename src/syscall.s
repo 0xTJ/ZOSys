@@ -1,6 +1,8 @@
 INCLUDE "config_scz180_private.inc"
 
-SECTION code_ca0_2
+MAX_SYSCALL_BYTES = 12
+
+SECTION code_rom_resident
 
 PUBLIC syscall
 syscall:
@@ -25,9 +27,29 @@ syscall:
     or h
     jp z, syscall_bad
 
-    ; Save SP and load
+    ; Save SP
     ld (syscall_sp), sp
-    ld sp, syscall_stack_tail
+
+    ; Save HL to stack
+    push hl
+
+    ; Load HL with base of function arguments
+    ld hl, (syscall_sp)
+    inc hl
+    inc hl
+
+    ; Load DE with base of copied function arguments
+    ld de, syscall_stack_tail - MAX_SYSCALL_BYTES
+
+    ; Copy arguments to syscall stack
+    ld bc, MAX_SYSCALL_BYTES
+    ldir
+
+    ; Pop HL from stack
+    pop hl
+    
+    ; Load SP with base of copied function arguments
+    ld sp, syscall_stack_tail - MAX_SYSCALL_BYTES
 
     ; Switch to kernel space
     ld a, 0xF1

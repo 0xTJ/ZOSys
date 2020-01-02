@@ -890,7 +890,7 @@
 886   0000              
 887   0000              
 2     0000              
-3     0000              SECTION code_ca0_2
+3     0000              SECTION code_rom_resident
 4     0000              
 5     0000              PUBLIC _context_init
 6     0000              

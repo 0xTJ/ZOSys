@@ -31,7 +31,7 @@ void asci_0_put_uc(unsigned char n) {
     }
 }
 
-void asci_0_put_u(unsigned n) {
+void asci_0_put_ui(unsigned int n) {
     for (signed char i = 2 * sizeof(n) - 1; i >= 0; --i) {
         char digit = (n >> (i * 4)) & 0xF;
         if (digit <= 9)

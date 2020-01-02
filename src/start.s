@@ -44,30 +44,30 @@ vector_table:
 SECTION code_crt_init
 
 start:
-    di
+    ; Initialize Stack Pointer
+    ; Until the proper stack is setup, the top of memory is used as stack
+    ; There must always be a valid stack to allow for NMI
+    ld sp, 0x10000
+
     im 1
 
     ; Relocate internal registers
-    ld a, #__IO_BASE_ADDRESS
+    ld a, __IO_BASE_ADDRESS
     out0 (ICR), a
-
-    ; Initialize Stack Pointer
-    ld hl, #0x10000
-    ld sp, hl
 
     ; Load interrupt vector table location
 IF vector_table & 0x1F
     ERROR "Vector table not aligned at 0x20 boundary"
 ENDIF
-    ld a, #(vector_table & 0xE0)
+    ld a, vector_table & 0xE0
     out0 (IL), a
-    ld a, #((vector_table >> 8) & 0xFF)
+    ld a, [vector_table >> 8] & 0xFF
     ld i, a
 
     ; Common Area 0 to fill 0x0000-0x0FFF
     ; Bank Area to fill 0x1000-0x7FFF
     ; Common Area 1 to fill 0x8000-0xFFFF
-    ld a, #0x81
+    ld a, 0x81
     out0 (CBAR), a
 
     ; Map Bank Area at 0x1000 to 0x01000
@@ -76,7 +76,7 @@ ENDIF
     ; out0 (BBR), a
 
     ; Map Common Area 1 at 0x8000 to 0x81000
-    ld a, #(0x81000 - 0x8000) >> 12
+    ld a, [0x81000 - 0x8000] >> 12
     out0 (CBR), a
 
     ; Copy 28k from 0x01000 to 0x81000
@@ -86,11 +86,11 @@ ENDIF
     ldir
 
     ; Map Bank Area at 0x1000 to 0x08000
-    ld a, #(0x08000 - 0x1000) >> 12
+    ld a, [0x08000 - 0x1000] >> 12
     out0 (BBR), a
 
     ; Map Common Area 1 at 0x8000 to 0x88000
-    ld a, #(0x88000 - 0x8000) >> 12
+    ld a, [0x88000 - 0x8000] >> 12
     out0 (CBR), a
 
     ; Copy 28k from 0x08000 to 0x88000
@@ -100,17 +100,17 @@ ENDIF
     ldir
 
     ; Make BA and CA1 offset to 0x80000
-    ld a, #0x80000 >> 12
+    ld a, 0x80000 >> 12
     out0 (BBR), a
     out0 (CBR), a
 
     ; Common Area 0 to fill 0x0000-0x0FFF
     ; Common Area 1 to fill 0x1000-0xFFFF
-    ld a, #0x11
+    ld a, 0x11
     out0 (CBAR), a
 
 
-SECTION code_ca0_2
+SECTION code_rom_resident
 
     ; Setup current SP value
     ld sp, interrupt_stack_tail
