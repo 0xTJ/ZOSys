@@ -1,8 +1,11 @@
 INCLUDE "config_scz180_public.inc"
 EXTERN _main
+EXTERN _context_init, context_save, context_restore
+EXTERN interrupt_stack_tail
+EXTERN syscall
 
 
-SECTION code_ca0
+SECTION rom_resident
 ORG 0x0000
 
     DEFS (0x00 - ASMPC), 0xFF   ; RST 0 / RESET
@@ -20,27 +23,22 @@ ORG 0x0000
     DEFS (0x30 - ASMPC), 0xFF   ; RST 30
     ret
     DEFS (0x38 - ASMPC), 0xFF   ; RST 38 / IM1 INT0
-    jmp int0
+    jmp int_0
 
     DEFS (0x40 - ASMPC), 0xFF
 vector_table:
-    DEFW no_vector              ; INT1
-    DEFW no_vector              ; INT2
+    DEFW int_no_vector          ; INT1
+    DEFW int_no_vector          ; INT2
     DEFW int_prt0               ; PRT0
-    DEFW no_vector              ; PRT1
-    DEFW no_vector              ; DMA0
-    DEFW no_vector              ; DMA1
-    DEFW no_vector              ; CSIO
-    DEFW no_vector              ; ASCI0
-    DEFW no_vector              ; ASCI1
+    DEFW int_no_vector          ; PRT1
+    DEFW int_no_vector          ; DMA0
+    DEFW int_no_vector          ; DMA1
+    DEFW int_no_vector          ; CSIO
+    DEFW int_no_vector          ; ASCI0
+    DEFW int_no_vector          ; ASCI1
 
     DEFS (0x66 - ASMPC), 0xFF   ; NMI
     retn
-
-
-no_vector:
-    ei
-    reti
 
 
 SECTION code_crt_init
@@ -138,18 +136,22 @@ halt_loop:
     jr halt_loop
 
 
-EXTERN _int0
+EXTERN _int_no_vector
+int_no_vector:
+    ei
+    reti
 
-int0:
+
+EXTERN _int_0
+int_0:
     call context_save
-    call _int0
+    call _int_0
     call context_restore
     ei
     reti
 
 
 EXTERN _int_prt0
-
 int_prt0:
     call context_save
     call _int_prt0
@@ -158,222 +160,15 @@ int_prt0:
     reti
 
 
-syscall:
-    ; Load A * 2 to HL
-    ld h, 0
-    sla a
-    rl h
-    ld l, a
-
-    ; Add syscall_table to HL
-    add hl, syscall_table
-
-    ; Load function address to HL
-    ld e, (hl)
-    inc hl
-    ld d, (hl)
-    ld hl, de
-
-    ; Return with error if HL is 0x0000
-    ld a, 0
-    or l
-    or h
-    jp z, syscall_bad
-
-    ; Save SP and load
-    ld (syscall_sp), sp
-    ld sp, syscall_stack_tail
-
-    ; Switch to kernel space
-    ld a, 0xF1
-    out0 (CBAR), a
-
-    ; Call function in HL
-    ld de, syscall_ret
-    push de
-    jp (hl)
-syscall_ret:
-
-    ; Switch to user space
-    ld a, 0x11
-    out0 (CBAR), a
-
-    ; Restore SP
-    ld sp, (syscall_sp)
-
-    ; Return
-    ret
-
-syscall_bad:
-    ld hl, 0xFFFF
-    ret
-
-
-PUBLIC _context_init
-PUBLIC context_init
-
-; Only to be done with interrupts disabled, while in kernel space
-; void context_init(void (*pc)());
-_context_init:
-context_init:
-    ; Copy pc argument to DE
-    pop hl
-    pop de
-    push de
-    push hl
-    ; Copy _context_temp_sp to HL and SP to _context_temp_sp
-    ld hl, (_interrupt_sp)
-    ld (_interrupt_sp), sp
-    ; Use top of reserved user space as stack to prevent overwriting
-    ld sp, nmi_clobberable_tail
-    ; Put kernel out of address space
-    ld a, 0x11
-    out0 (CBAR), a
-    ; Load original _context_temp_sp to SP
-    ld sp, hl
-    ; Clear HL
-    ld hl, 0
-    ; Push return address
-    push de
-    ; Push IX
-    push hl
-    ; Push AF, AF'
-    push hl
-    push hl
-    ; Push BC, DE, HL
-    push hl
-    push hl
-    push hl
-    ; Push BC', DE', HL'
-    push hl
-    push hl
-    push hl
-    ; Push IY
-    push hl
-    ; Copy _context_temp_sp to HL and SP to _context_temp_sp
-    ld hl, (_interrupt_sp)
-    ld (_interrupt_sp), sp
-    ; Use top of reserved user space as stack to prevent overwriting
-    ld sp, nmi_clobberable_tail
-    ; Bring kernel into address space
-    ld a, 0xF1
-    out0 (CBAR), a
-    ; Restore original SP
-    ld sp, hl
-    ; Return
-    ret
-
-
-PUBLIC context_save
-
-; Only to be done with interrupts disabled, while in user space
-context_save:
-    ; Pop return address to IX while pushing IX
-    ex (sp), ix
-    ; Push AF, AF'
-    push af
-    ex af,af'
-    push af
-    ; Push BC, DE, HL
-    push bc
-    push de
-    push hl
-    ; Push BC', DE', HL'
-    exx
-    push bc
-    push de
-    push hl
-    ; Push IY
-    push iy
-    ; Save SP
-    ld (_interrupt_sp), sp
-    ; Use top of reserved user space as stack to prevent overwriting
-    ld sp, nmi_clobberable_tail
-    ; Bring kernel into address space
-    ld a, 0xF1
-    out0 (CBAR), a
-    ; Use stack at top of kernel space
-    ld sp, interrupt_stack_tail
-    ; Push return address from IX
-    push ix
-    ; Return
-    ret
-
-
-PUBLIC context_restore
-
-; Only to be done with interrupts disabled, while in kernel space
-context_restore:
-    ; Pop return address to IX
-    pop ix
-    ; Use top of reserved user space as stack to prevent overwriting
-    ld sp, nmi_clobberable_tail
-    ; Put kernel out of address space
-    ld a, 0x11
-    out0 (CBAR), a
-    ; Restore stack location
-    ld sp, (_interrupt_sp)
-    ; Pop IY
-    pop iy
-    ; Pop HL', DE', BC'
-    pop hl
-    pop de
-    pop bc
-    exx
-    ; Pop HL, DE, BC
-    pop hl
-    pop de
-    pop bc
-    ; Pop AF', AF
-    pop af
-    ex af,af'
-    pop af
-    ; Push return address while popping to IX
-    ex (sp),ix
-    ; Return
-    ret
-
-
 argv:
     DEFW 0
 
 
-EXTERN _sys_0
-EXTERN _sys_1
-
-syscall_table:
-    DEFW _sys_0
-    DEFW _sys_1
-    DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
-
-
-SECTION code_ca1
+SECTION user_tmp
 ORG 0xF000
 
-PUBLIC _interrupt_sp
-
-_interrupt_sp:
-    DEFW 0
-syscall_sp:
-    DEFW 0
-
-syscall_stack:
-    DEFS 0x100
-syscall_stack_tail:
-
-; Used as a stack when no consistent stack will be available
-; SP must always point to a valid stack in case an NMI occurs
-nmi_clobberable:
-    DEFS 0x100
-nmi_clobberable_tail:
-
-SECTION code_ba
+SECTION kernel
 ORG 0x1000
-
 SECTION code_compiler
 SECTION data_compiler
 SECTION bss_compiler
-
-; Interrupt stack exists at the top of this section
-interrupt_stack_tail = 0xF000
-

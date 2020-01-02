@@ -44,6 +44,8 @@ int main(void) {
     TCR = __IO_TCR_TIE0 | __IO_TCR_TDE0;
     asci_0_puts("Initialized PRT0\n");
 
+    a = 0;
+
     struct process *new_proc = process_new();
     new_proc->sp = (uint16_t) stack2 + 0x1000;
     new_proc->cbr = 0x80;
@@ -57,10 +59,6 @@ int main(void) {
         io_led_output = (a ^= (1 << 4));
         cpu_delay_ms(500);
     }
-}
-
-void int0(void) {
-    asci_0_puts("INT0\n");
 }
 
 void loop(void) {
@@ -79,6 +77,10 @@ void sys_0(void) {
 
 void sys_1(void) {
     asci_0_puts("syscall 1\n");
+}
+
+void int_0(void) {
+    asci_0_puts("INT0\n");
 }
 
 void int_prt0(void) {
