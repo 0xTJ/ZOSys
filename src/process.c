@@ -1,11 +1,11 @@
 #include "process.h"
 #include "context.h"
 #include "dma.h"
-#include <cpu.h>
+#include "mutex.h"
 #include <arch/scz180.h>
+#include <cpu.h>
+#include <intrinsic.h>
 #include <stdlib.h>
-
-#include "asci.h"
 
 volatile p_list_t proc_list;
 volatile struct process *current_proc = NULL;
@@ -53,25 +53,29 @@ int sys_fork(void) {
 
     child_proc->cbr = child_cbr;
 
-    __asm__("di");
+    intrinsic_di();
 
+    mutex_lock(&dma_0_mtx);
     dma_0_addr(parent_addr_base, child_addr_base, 0);
     dma_0_mode(MEMORY_INC, MEMORY_INC, true);
 
-    __asm__("EXTERN _context_save\nld hl, child_reentry\npush hl\ncall _context_save");   // From this point until the restore, can't use stack variables
-
+    // From this point until the restore, can't use non-globals
+    __asm__("ld hl, sys_fork_child_reentry\npush hl");
+    context_save();
     dma_0_enable();
-
-    __asm__("EXTERN _context_restore\ncall _context_restore\npop hl");
+    context_restore();
+    __asm__("pop hl");
 
     child_proc->cbar = interrupt_cbar;
     child_proc->sp = interrupt_sp;
 
-    __asm__("ei\n");
+    intrinsic_ei();
+
+    mutex_unlock(&dma_0_mtx);
 
     child_proc->state = READY;
 
-    __asm__("child_reentry:");
+intrinsic_label(sys_fork_child_reentry)
 
     if (current_proc->pid == parent_pid)
         return child_pid;

@@ -63,8 +63,8 @@ int main(void) {
 
 void init(void) {
     while (1) {
-        asci_0_puts("In init\n");
         cpu_delay_ms(250);
+        asci_0_puts("In init\n");
     }
 }
 
