@@ -8,6 +8,7 @@ int prt_start_0(uint16_t count, bool interrupt) {
     RLDR0L = (count - 1) & 0xFF;
     RLDR0H = ((count - 1) >> 8) & 0xFF;
     TCR |= (interrupt ? __IO_TCR_TIE0 : 0) | __IO_TCR_TDE0;
+    return 0;
 }
 
 int prt_start_1(uint16_t count, bool interrupt, enum prt_output_control toc) {
@@ -16,12 +17,15 @@ int prt_start_1(uint16_t count, bool interrupt, enum prt_output_control toc) {
     RLDR1L = (count - 1) & 0xFF;
     RLDR1H = ((count - 1) >> 8) & 0xFF;
     TCR |= (interrupt ? __IO_TCR_TIE1 : 0) | toc | __IO_TCR_TDE1;
+    return 0;
 }
 
 int prt_stop_0(void) {
     TCR = TCR & ~__IO_TCR_TDE0;
+    return 0;
 }
 
 int prt_stop_1(void) {
     TCR = TCR & ~__IO_TCR_TDE1;
+    return 0;
 }

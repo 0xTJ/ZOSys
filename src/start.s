@@ -1,50 +1,21 @@
 INCLUDE "config_scz180_public.inc"
+EXTERN vector_table, trap
 EXTERN _main
-EXTERN _context_init, context_save, context_restore
-EXTERN interrupt_stack_tail
-EXTERN syscall_stack_tail
-EXTERN syscall
-
 
 SECTION rom_resident
 ORG 0x0000
 
-    DEFS (0x00 - ASMPC), 0xFF   ; RST 0 / RESET
-    jp start
-    DEFS (0x08 - ASMPC), 0xFF   ; RST 8 / SYSCALL
-    jmp syscall
-    DEFS (0x10 - ASMPC), 0xFF   ; RST 10
-    ret
-    DEFS (0x18 - ASMPC), 0xFF   ; RST 18
-    ret
-    DEFS (0x20 - ASMPC), 0xFF   ; RST 20
-    ret
-    DEFS (0x28 - ASMPC), 0xFF   ; RST 28
-    ret
-    DEFS (0x30 - ASMPC), 0xFF   ; RST 30
-    ret
-    DEFS (0x38 - ASMPC), 0xFF   ; RST 38 / IM1 INT0
-    jmp int_0
-
-    DEFS (0x40 - ASMPC), 0xFF
-vector_table:
-    DEFW int_no_vector          ; INT1
-    DEFW int_no_vector          ; INT2
-    DEFW int_prt0               ; PRT0
-    DEFW int_no_vector          ; PRT1
-    DEFW int_no_vector          ; DMA0
-    DEFW int_no_vector          ; DMA1
-    DEFW int_no_vector          ; CSIO
-    DEFW int_no_vector          ; ASCI0
-    DEFW int_no_vector          ; ASCI1
-
-    DEFS (0x66 - ASMPC), 0xFF   ; NMI
-    retn
-
+SECTION interrupt_table
 
 SECTION code_crt_init
 
-start:
+PUBLIC reset
+reset:
+    ; Jump to trap if in trap handler
+    ; in0 a, (ITC)
+    ; tst 0x80
+    ; jp nz, trap
+
     ; Initialize Stack Pointer
     ; Until the proper stack is setup, the top of memory is used as stack
     ; There must always be a valid stack to allow for NMI
@@ -137,30 +108,6 @@ halt_loop:
     jr halt_loop
 
 
-EXTERN _int_no_vector
-int_no_vector:
-    ei
-    reti
-
-
-EXTERN _int_0
-int_0:
-    call context_save
-    call _int_0
-    call context_restore
-    ei
-    reti
-
-
-EXTERN _int_prt0
-int_prt0:
-    call context_save
-    call _int_prt0
-    call context_restore
-    ei
-    reti
-
-
 argv:
     DEFW 0
 
@@ -172,7 +119,7 @@ SECTION kernel
 ORG 0x1000
 
 stack0:
-    DEFS 0x1000
+    DEFS 0x80
 stack0_tail:
 
 SECTION code_compiler

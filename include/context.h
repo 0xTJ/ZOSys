@@ -21,5 +21,8 @@ extern volatile uint16_t interrupt_sp;
 extern volatile uint8_t interrupt_cbar;
 
 extern void context_init(void (*pc)());
+// The following functions can not be called from C, they will break the stack
+extern void context_save(void);
+extern void context_restore(void);
 
 #endif

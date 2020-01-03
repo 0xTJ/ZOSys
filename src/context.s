@@ -2,10 +2,9 @@ INCLUDE "config_scz180_private.inc"
 
 SECTION code_rom_resident
 
-PUBLIC _context_init
-
 ; Only to be done with interrupts disabled, while in kernel space
 ; void context_init(void (*pc)());
+PUBLIC _context_init
 _context_init:
     ; Copy pc argument to DE
     pop hl
@@ -55,10 +54,9 @@ _context_init:
     ret
 
 
-PUBLIC context_save
-
 ; Only to be done with interrupts disabled, while in user space
-context_save:
+PUBLIC _context_save
+_context_save:
     ; Pop return address to IX while pushing IX
     ex (sp), ix
     ; Push AF, AF'
@@ -93,10 +91,9 @@ context_save:
     ret
 
 
-PUBLIC context_restore
-
 ; Only to be done with interrupts disabled, while in kernel space
-context_restore:
+PUBLIC _context_restore
+_context_restore:
     ; Pop return address to IX
     pop ix
     ; Use top of reserved user space as stack to prevent overwriting

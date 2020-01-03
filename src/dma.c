@@ -4,10 +4,9 @@
 
 #pragma portmode z180
 
-void dma_init(void) {
-}
+mutex_t dma_0_mtx = MUTEX_INIT;
 
-int dma_addr_0(unsigned long src_addr, unsigned long dest_addr, unsigned int byte_count) {
+int dma_0_addr(unsigned long src_addr, unsigned long dest_addr, unsigned int byte_count) {
     SAR0L = (src_addr >> 0) & 0xFF;
     SAR0H = (src_addr >> 8) & 0xFF;
     SAR0B = (src_addr >> 16) & 0x0F;
@@ -20,7 +19,7 @@ int dma_addr_0(unsigned long src_addr, unsigned long dest_addr, unsigned int byt
     return 0;
 }
 
-int dma_mode_0(enum dma_0_mode src_mode, enum dma_0_mode dest_mode, bool burst_mode) {
+int dma_0_mode(enum dma_0_mode src_mode, enum dma_0_mode dest_mode, bool burst_mode) {
     if ((dest_mode == MEMORY_FIX || dest_mode == IO_FIX) && (src_mode == MEMORY_FIX || src_mode == IO_FIX))
         return -1;
 
@@ -29,7 +28,7 @@ int dma_mode_0(enum dma_0_mode src_mode, enum dma_0_mode dest_mode, bool burst_m
     return 0;
 }
 
-int dma_enable_0(void) {
+int dma_0_enable(void) {
     DSTAT = (DSTAT & ~__IO_DSTAT_DWE0) | __IO_DSTAT_DE0;
 
     return 0;

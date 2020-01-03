@@ -1,6 +1,7 @@
 #ifndef INCLUDE_DMA_H
 #define INCLUDE_DMA_H
 
+#include "mutex.h"
 #include <stdbool.h>
 
 enum dma_0_mode {
@@ -10,8 +11,10 @@ enum dma_0_mode {
     IO_FIX = 3,
 };
 
-int dma_addr_0(unsigned long src_addr, unsigned long dest_addr, unsigned int byte_count);
-int dma_mode_0(enum dma_0_mode src_mode, enum dma_0_mode dest_mode, bool burst_mode);
-int dma_enable_0(void);
+extern mutex_t dma_0_mtx;
+
+int dma_0_addr(unsigned long src_addr, unsigned long dest_addr, unsigned int byte_count);
+int dma_0_mode(enum dma_0_mode src_mode, enum dma_0_mode dest_mode, bool burst_mode);
+int dma_0_enable(void);
 
 #endif
