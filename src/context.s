@@ -80,7 +80,9 @@ context_save:
     ld (_interrupt_sp), sp
     ; Use top of reserved user space as stack to prevent overwriting
     ld sp, nmi_clobberable_tail
-    ; Bring kernel into address space
+    ; Save CBAR and load with kernel CBAR
+    in0 a, (CBAR)
+    ld (_interrupt_cbar), a
     ld a, 0xF1
     out0 (CBAR), a
     ; Use stack at top of kernel space
@@ -99,8 +101,8 @@ context_restore:
     pop ix
     ; Use top of reserved user space as stack to prevent overwriting
     ld sp, nmi_clobberable_tail
-    ; Put kernel out of address space
-    ld a, 0x11
+    ; Restore CBAR
+    ld a, (_interrupt_cbar)
     out0 (CBAR), a
     ; Restore stack location
     ld sp, (_interrupt_sp)
@@ -130,6 +132,9 @@ SECTION user_tmp
 PUBLIC _interrupt_sp
 _interrupt_sp:
     DEFW 0
+PUBLIC _interrupt_cbar
+_interrupt_cbar:
+    DEFB 0
 
 ; Used as a stack when no consistent stack will be available
 ; SP must always point to a valid stack in case an NMI occurs

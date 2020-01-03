@@ -906,7 +906,7 @@
 16    0004  2A 00 00        ld hl, (_interrupt_sp)
 17    0007  ED 73 00 00     ld (_interrupt_sp), sp
 18    000B                  ; Use top of reserved user space as stack to prevent overwriting
-19    000B  31 02 01        ld sp, nmi_clobberable_tail
+19    000B  31 03 01        ld sp, nmi_clobberable_tail
 20    000E                  ; Put kernel out of address space
 21    000E  3E 11           ld a, 0x11
 22    0010  ED 39 FA        out0 (CBAR), a
@@ -935,7 +935,7 @@
 45    0022  2A 00 00        ld hl, (_interrupt_sp)
 46    0025  ED 73 00 00     ld (_interrupt_sp), sp
 47    0029                  ; Use top of reserved user space as stack to prevent overwriting
-48    0029  31 02 01        ld sp, nmi_clobberable_tail
+48    0029  31 03 01        ld sp, nmi_clobberable_tail
 49    002C                  ; Bring kernel into address space
 50    002C  3E F1           ld a, 0xF1
 51    002E  ED 39 FA        out0 (CBAR), a
@@ -969,77 +969,82 @@
 79    0041                  ; Save SP
 80    0041  ED 73 00 00     ld (_interrupt_sp), sp
 81    0045                  ; Use top of reserved user space as stack to prevent overwriting
-82    0045  31 02 01        ld sp, nmi_clobberable_tail
-83    0048                  ; Bring kernel into address space
-84    0048  3E F1           ld a, 0xF1
-85    004A  ED 39 FA        out0 (CBAR), a
-86    004D                  ; Use stack at top of kernel space
-87    004D  31 00 F0        ld sp, interrupt_stack_tail
-88    0050                  ; Push return address from IX
-89    0050  DD E5           push ix
-90    0052                  ; Return
-91    0052  C9              ret
-92    0053              
-93    0053              
-94    0053              PUBLIC context_restore
-95    0053              
-96    0053              ; Only to be done with interrupts disabled, while in kernel space
-97    0053              context_restore:
-98    0053                  ; Pop return address to IX
-99    0053  DD E1           pop ix
-100   0055                  ; Use top of reserved user space as stack to prevent overwriting
-101   0055  31 02 01        ld sp, nmi_clobberable_tail
-102   0058                  ; Put kernel out of address space
-103   0058  3E 11           ld a, 0x11
-104   005A  ED 39 FA        out0 (CBAR), a
-105   005D                  ; Restore stack location
-106   005D  ED 7B 00 00     ld sp, (_interrupt_sp)
-107   0061                  ; Pop IY
-108   0061  FD E1           pop iy
-109   0063                  ; Pop HL', DE', BC'
-110   0063  E1              pop hl
-111   0064  D1              pop de
-112   0065  C1              pop bc
-113   0066  D9              exx
-114   0067                  ; Pop HL, DE, BC
-115   0067  E1              pop hl
-116   0068  D1              pop de
-117   0069  C1              pop bc
-118   006A                  ; Pop AF', AF
-119   006A  F1              pop af
-120   006B  08              ex af,af'
-121   006C  F1              pop af
-122   006D                  ; Push return address while popping to IX
-123   006D  DD E3           ex (sp),ix
-124   006F                  ; Return
-125   006F  C9              ret
-126   0070              
-127   0070              
-128   0070              SECTION user_tmp
-129   0000              
-130   0000              PUBLIC _interrupt_sp
-131   0000              _interrupt_sp:
-132   0000  00 00           DEFW 0
-133   0002              
-134   0002              ; Used as a stack when no consistent stack will be available
-135   0002              ; SP must always point to a valid stack in case an NMI occurs
-136   0002              PUBLIC nmi_clobberable, nmi_clobberable_tail
-137   0002              nmi_clobberable:
-138   0002  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      0022  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      0042  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      0062  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      0082  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      00A2  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      00C2  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-      00E2  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+82    0045  31 03 01        ld sp, nmi_clobberable_tail
+83    0048                  ; Save CBAR and load with kernel CBAR
+84    0048  ED 38 FA        in0 a, (CBAR)
+85    004B  32 02 00        ld (_interrupt_cbar), a
+86    004E  3E F1           ld a, 0xF1
+87    0050  ED 39 FA        out0 (CBAR), a
+88    0053                  ; Use stack at top of kernel space
+89    0053  31 00 F0        ld sp, interrupt_stack_tail
+90    0056                  ; Push return address from IX
+91    0056  DD E5           push ix
+92    0058                  ; Return
+93    0058  C9              ret
+94    0059              
+95    0059              
+96    0059              PUBLIC context_restore
+97    0059              
+98    0059              ; Only to be done with interrupts disabled, while in kernel space
+99    0059              context_restore:
+100   0059                  ; Pop return address to IX
+101   0059  DD E1           pop ix
+102   005B                  ; Use top of reserved user space as stack to prevent overwriting
+103   005B  31 03 01        ld sp, nmi_clobberable_tail
+104   005E                  ; Restore CBAR
+105   005E  3A 02 00        ld a, (_interrupt_cbar)
+106   0061  ED 39 FA        out0 (CBAR), a
+107   0064                  ; Restore stack location
+108   0064  ED 7B 00 00     ld sp, (_interrupt_sp)
+109   0068                  ; Pop IY
+110   0068  FD E1           pop iy
+111   006A                  ; Pop HL', DE', BC'
+112   006A  E1              pop hl
+113   006B  D1              pop de
+114   006C  C1              pop bc
+115   006D  D9              exx
+116   006E                  ; Pop HL, DE, BC
+117   006E  E1              pop hl
+118   006F  D1              pop de
+119   0070  C1              pop bc
+120   0071                  ; Pop AF', AF
+121   0071  F1              pop af
+122   0072  08              ex af,af'
+123   0073  F1              pop af
+124   0074                  ; Push return address while popping to IX
+125   0074  DD E3           ex (sp),ix
+126   0076                  ; Return
+127   0076  C9              ret
+128   0077              
+129   0077              
+130   0077              SECTION user_tmp
+131   0000              
+132   0000              PUBLIC _interrupt_sp
+133   0000              _interrupt_sp:
+134   0000  00 00           DEFW 0
+135   0002              PUBLIC _interrupt_cbar
+136   0002              _interrupt_cbar:
+137   0002  00              DEFB 0
+138   0003              
+139   0003              ; Used as a stack when no consistent stack will be available
+140   0003              ; SP must always point to a valid stack in case an NMI occurs
+141   0003              PUBLIC nmi_clobberable, nmi_clobberable_tail
+142   0003              nmi_clobberable:
+143   0003  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0023  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0043  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0063  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      0083  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      00A3  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      00C3  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+      00E3  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
                             DEFS 0x100
-139   0102              nmi_clobberable_tail:
-140   0102              
-141   0102              
-142   0102              SECTION kernel
-143   0000              
-144   0000              ; Interrupt stack exists at the top of this section
-145   0000              PUBLIC interrupt_stack_tail
-146   0000              defc interrupt_stack_tail = 0xF000
-147   0000              
+144   0103              nmi_clobberable_tail:
+145   0103              
+146   0103              
+147   0103              SECTION kernel
+148   0000              
+149   0000              ; Interrupt stack exists at the top of this section
+150   0000              PUBLIC interrupt_stack_tail
+151   0000              defc interrupt_stack_tail = 0xF000
+152   0000              

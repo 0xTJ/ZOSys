@@ -18,6 +18,7 @@ struct context_stack {
 };
 
 extern volatile uint16_t interrupt_sp;
+extern volatile uint8_t interrupt_cbar;
 
 extern void context_init(void (*pc)());
 

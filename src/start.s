@@ -2,6 +2,7 @@ INCLUDE "config_scz180_public.inc"
 EXTERN _main
 EXTERN _context_init, context_save, context_restore
 EXTERN interrupt_stack_tail
+EXTERN syscall_stack_tail
 EXTERN syscall
 
 
@@ -113,7 +114,7 @@ ENDIF
 SECTION code_rom_resident
 
     ; Setup current SP value
-    ld sp, interrupt_stack_tail
+    ld sp, stack0_tail
     
     ; Enable Interrupts
     ei
@@ -169,6 +170,11 @@ ORG 0xF000
 
 SECTION kernel
 ORG 0x1000
+
+stack0:
+    DEFS 0x1000
+stack0_tail:
+
 SECTION code_compiler
 SECTION data_compiler
 SECTION bss_compiler
