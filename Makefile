@@ -1,6 +1,6 @@
 CC = zcc
 
-CFLAGS = +scz180 -subtype=none -Iinclude --list --no-crt -nostdlib -SO3 -clib=sdcc_iy --math32_z180 --max-allocs-per-node200000
+CFLAGS = +scz180 -subtype=none -Iinclude --list --no-crt -nostdlib -SO3 -clib=sdcc_iy --math32_z180# --max-allocs-per-node200000
 LDFLAGS = +scz180 -subtype=none -Iinclude --no-crt -nostdlib -SO3 -clib=sdcc_iy --math32_z180 --max-allocs-per-node200000
 
 ASM_SRCS = src/start.s src/interrupt.s src/context.s src/syscall.s

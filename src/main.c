@@ -10,6 +10,7 @@
 #include <z88dk.h>
 #include <z180.h>
 #include <malloc.h>
+#include <arch/scz180.h>
 
 #pragma portmode z180
 
@@ -101,4 +102,31 @@ void trap(uintptr_t pc) {
 
 void int_0(void) {
     asci_0_puts("INT0\n");
+}
+
+void int_prt0(void) {
+    (void) TCR;
+    (void) TMDR0L;
+    current_proc->state = READY;
+    struct process *next_proc = current_proc;
+    do {
+        next_proc = p_list_next(next_proc);
+        if (!next_proc) {
+            next_proc = p_list_front(&proc_list);
+        }
+        if (!next_proc) {
+            // Process list is empty
+            // TODO: This is fatal, treat is as such
+            current_proc->state = RUNNING;
+            return;
+        }
+    } while (next_proc->state != READY);
+    current_proc->sp = interrupt_sp;
+    current_proc->cbar = interrupt_cbar;
+    current_proc->cbr = CBR;
+    CBR = next_proc->cbr;
+    interrupt_cbar = next_proc->cbar;
+    interrupt_sp = next_proc->sp;
+    current_proc = next_proc;
+    io_led_output = current_proc->pid;
 }

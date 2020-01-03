@@ -2,6 +2,7 @@
 #include "context.h"
 #include "dma.h"
 #include <cpu.h>
+#include <arch/scz180.h>
 #include <stdlib.h>
 
 #include "asci.h"
