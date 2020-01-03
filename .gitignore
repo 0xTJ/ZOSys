@@ -1,3 +1,4 @@
 *.bin
 *.o
 *.lis
+zcc_opt.def
