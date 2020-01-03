@@ -54,14 +54,14 @@ int sys_fork(void) {
 
     __asm__("di");
 
-    dma_addr_0(parent_addr_base, child_addr_base, 0);
-    dma_mode_0(MEMORY_INC, MEMORY_INC, true);
+    dma_0_addr(parent_addr_base, child_addr_base, 0);
+    dma_0_mode(MEMORY_INC, MEMORY_INC, true);
 
-    __asm__("EXTERN context_save\nld hl, child_reentry\npush hl\ncall context_save");   // From this point until the restore, can't use stack variables
+    __asm__("EXTERN _context_save\nld hl, child_reentry\npush hl\ncall _context_save");   // From this point until the restore, can't use stack variables
 
-    dma_enable_0();
+    dma_0_enable();
 
-    __asm__("EXTERN context_restore\ncall context_restore\npop hl");
+    __asm__("EXTERN _context_restore\ncall _context_restore\npop hl");
 
     child_proc->cbar = interrupt_cbar;
     child_proc->sp = interrupt_sp;
