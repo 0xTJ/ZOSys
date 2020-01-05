@@ -4,7 +4,7 @@ CFLAGS = +scz180 -subtype=none -Iinclude --list --no-crt -nostdlib -SO3 -clib=sd
 LDFLAGS = +scz180 -subtype=none -Iinclude --no-crt -nostdlib -SO3 -clib=sdcc_iy --math32_z180 --max-allocs-per-node200000
 
 ASM_SRCS = src/start.s src/interrupt.s src/context.s src/syscall.s
-C_SRCS = src/main.c src/process.c src/asci.c src/dma.c src/prt.c src/mutex.c
+C_SRCS = src/main.c src/process.c src/asci.c src/dma.c src/prt.c src/mutex.c src/ds1302.c
 
 OBJS = $(ASM_SRCS:.s=.o) $(C_SRCS:.c=.o)
 

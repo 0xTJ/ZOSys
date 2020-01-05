@@ -3,6 +3,7 @@
 #include "prt.h"
 #include "dma.h"
 #include "asci.h"
+#include "ds1302.h"
 #include "context.h"
 #include <cpu.h>
 #include <stdint.h>
@@ -62,9 +63,17 @@ int main(void) {
 }
 
 void init(void) {
+    asci_0_put_uc(59);
     while (1) {
         cpu_delay_ms(250);
-        asci_0_puts("In init\n");
+        struct tm time;
+        ds1302_time_get(&time);
+        asci_0_put_uc(time.tm_hour);
+        asci_0_putc(':');
+        asci_0_put_uc(time.tm_min);
+        asci_0_putc(':');
+        asci_0_put_uc(time.tm_sec);
+        asci_0_putc('\n');
     }
 }
 
