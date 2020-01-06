@@ -1,29 +1,46 @@
 CC = zcc
 
-CFLAGS = +scz180 -subtype=none -Iinclude --list --no-crt -nostdlib -SO3 -clib=sdcc_iy --math32_z180# --max-allocs-per-node200000
-LDFLAGS = +scz180 -subtype=none -Iinclude --no-crt -nostdlib -SO3 -clib=sdcc_iy --math32_z180 --max-allocs-per-node200000
+ARCH = +scz180 -subtype=none
 
-ASM_SRCS = src/start.s src/interrupt.s src/context.s src/syscall.s
-C_SRCS = src/main.c src/process.c src/asci.c src/dma.c src/prt.c src/mutex.c src/ds1302.c
+SRCDIR = src
+DEPDIR = dep
+OBJDIR = obj
 
-OBJS = $(ASM_SRCS:.s=.o) $(C_SRCS:.c=.o)
+SRCS_C = $(wildcard $(SRCDIR)/*.c)
+SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)/*.s))
+DEPS := $(SRCS_C:$(SRCDIR)/%.c=$(DEPDIR)/%.d)
+OBJS = $(SRCS_ASM:$(SRCDIR)/%.s=$(OBJDIR)/%.o) $(SRCS_C:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+
+DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
+CPPFLAGS += $(DEPFLAGS) -Iinclude
+CFLAGS += --list -SO3 -clib=sdcc_iy --math32_z180 --max-allocs-per-node200000
+LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy --math32_z180
+LDLIBS += -lm
 
 TARGET = zosys
+
+.PHONY: all clean
 
 all: $(TARGET).bin
 
 $(TARGET).bin: $(OBJS)
-	$(CC) $(LDFLAGS) $(INCLUDES) -o $@ $(OBJS) $(LFLAGS) $(LIBS)
+	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
 	dd if=/dev/zero of=$@ bs=1 count=1 seek=32767
 
-.c.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
+	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-.s.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.s
+	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
 
-.PHONY: clean
+$(OBJDIR): ; @mkdir -p $@
+$(DEPDIR): ; @mkdir -p $@
+
+$(DEPS):
+
+include $(wildcard $(DEPS))
+
 clean:
-	$(RM) *.bin *.o *.map *.com *.def $(OBJS)
+	$(RM) *.bin *.def $(DEPDIR)/* $(OBJDIR)/*
