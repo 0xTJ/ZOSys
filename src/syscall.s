@@ -6,6 +6,18 @@ SECTION code_rom_resident
 
 PUBLIC syscall
 syscall:
+    ; Stack on entry:
+    ; | [Arguments] |
+    ; +-------------+
+    ; |             |
+    ; +   Ignored   +
+    ; |             |
+    ; +-------------+
+    ; |   Return    |
+    ; +   Address   +
+    ; |             |
+    ; +-------------+
+
     ; Load A * 2 to HL
     ld h, 0
     sla a
@@ -29,6 +41,8 @@ syscall:
     push hl
     ; Load HL with base of function arguments
     ld hl, (syscall_sp)
+    inc hl
+    inc hl
     inc hl
     inc hl
     ; Load DE with base of copied function arguments
@@ -60,15 +74,14 @@ syscall_bad:
     ret
 
 EXTERN _sys_fork
-EXTERN _sys_1
+EXTERN _sys_waitpid
 syscall_table:
     DEFW _sys_fork
-    DEFW _sys_1
+    DEFW _sys_waitpid
     DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
     
 
 SECTION user_tmp
-
 
 syscall_sp:
     DEFW 0

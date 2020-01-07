@@ -19,9 +19,9 @@ unsigned char _malloc_block[0x1000];
 unsigned char *_malloc_heap = _malloc_block;
 
 int fork(void) __naked;
+pid_t wait(int *wstatus);
+pid_t waitpid(pid_t pid, int *wstatus, int options) __naked;
 void init(void);
-
-volatile unsigned char a;
 
 int main(void) {
     CMR = __IO_CMR_X2;
@@ -58,12 +58,18 @@ int main(void) {
 
     asci_0_puts("Started ZOSYS\n");
 
+    int status = 0;
+
+    asci_0_put_ui(wait(&status));
+    asci_0_putc('\n');
+    asci_0_put_ui(status);
+    asci_0_putc('\n');
+
     while (1)
         ;
 }
 
 void init(void) {
-    asci_0_put_uc(59);
     while (1) {
         cpu_delay_ms(250);
         struct tm time;
@@ -77,14 +83,17 @@ void init(void) {
     }
 }
 
-int fork(void) __naked {
+pid_t fork(void) __naked {
     __asm__("ld a, 0\nrst 8\nret");
 }
 
-void sys_1(unsigned int n) {
-    asci_0_puts("syscall 1: ");
-    asci_0_put_ui(n);
-    asci_0_putc('\n');
+pid_t wait(int *wstatus) {
+    return waitpid(-1, wstatus, 0);
+}
+
+pid_t waitpid(pid_t pid, int *wstatus, int options) __naked {
+    __asm__("ld a, 1\nrst 8\nret");
+    (void) pid, (void) wstatus, (void) options;
 }
 
 void trap(uintptr_t pc) {
@@ -133,9 +142,9 @@ void int_prt0(void) {
     current_proc->sp = interrupt_sp;
     current_proc->cbar = interrupt_cbar;
     current_proc->cbr = CBR;
-    CBR = next_proc->cbr;
-    interrupt_cbar = next_proc->cbar;
-    interrupt_sp = next_proc->sp;
     current_proc = next_proc;
+    CBR = current_proc->cbr;
+    interrupt_cbar = current_proc->cbar;
+    interrupt_sp = current_proc->sp;
     io_led_output = current_proc->pid;
 }

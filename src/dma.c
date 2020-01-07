@@ -33,3 +33,11 @@ int dma_0_enable(void) {
 
     return 0;
 }
+
+int dma_memcpy(uint32_t dest, uint32_t src, uint16_t num) {
+    mutex_lock(&dma_0_mtx);
+    dma_0_addr(src, dest, num);
+    dma_0_mode(MEMORY_INC, MEMORY_INC, true);
+    dma_0_enable();
+    mutex_unlock(&dma_0_mtx);
+}
