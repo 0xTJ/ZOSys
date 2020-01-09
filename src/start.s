@@ -1,5 +1,6 @@
 INCLUDE "config_scz180_public.inc"
 EXTERN vector_table, trap
+EXTERN syscall_stack_tail
 EXTERN _main
 
 SECTION rom_resident
@@ -85,7 +86,7 @@ ENDIF
 SECTION code_rom_resident
 
     ; Setup current SP value
-    ld sp, stack0_tail
+    ld sp, stack_tail
     
     ; Enable Interrupts
     ei
@@ -118,9 +119,7 @@ ORG 0xF000
 SECTION kernel
 ORG 0x1000
 
-stack0:
-    DEFS 0x80
-stack0_tail:
+stack_tail = 0xF000
 
 SECTION code_compiler
 SECTION data_compiler

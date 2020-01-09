@@ -2,34 +2,46 @@
 #define INCLUDE_PROCESS_H
 
 #include <adt.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
 
 #define WNOHANG ((int) 0x1)
 
 enum proc_state {
-    EMPTY,
-    READY,
-    RUNNING,
+    EMPTY = 0,
+    READY = 1,
+    RUNNING = 2,
     ZOMBIE
 };
 
+#define PROC_STATE_READY_STR "1"
+#define PROC_STATE_RUNNING_STR "2"
+
 struct process {
     p_list_t list;
+    uint16_t sp;
+    uint8_t cbr;
+    enum proc_state state;
     pid_t pid;
     pid_t ppid;
-    enum proc_state state;
-    uint8_t cbr;
-    uint8_t cbar;
-    uint16_t sp;
     int status;
 };
 
-extern volatile p_list_t proc_list;
+#define PROCESS_OFFSETOF_SP_STR "4"
+#define PROCESS_OFFSETOF_CBR_STR "6"
+#define PROCESS_OFFSETOF_STATE_STR "7"
+
+extern volatile p_list_t process_ready_list;
+extern volatile p_list_t process_zombie_list;
+
 extern volatile struct process *current_proc;
 
 void process_init(void);
 struct process *process_new(void);
+// Must enter with interrupts disabled
+void process_switch(struct process *next_proc) __z88dk_fastcall;
+void process_schedule(void);
 int sys_fork(void);
 pid_t sys_waitpid(pid_t pid, uintptr_t /* int * */ wstatus, int options);
 

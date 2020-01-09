@@ -73,6 +73,7 @@ syscall_bad:
     ld hl, 0xFFFF
     ret
 
+
 EXTERN _sys_fork
 EXTERN _sys_waitpid
 syscall_table:
@@ -85,7 +86,8 @@ SECTION user_tmp
 
 syscall_sp:
     DEFW 0
+
 PUBLIC syscall_stack, syscall_stack_tail
 syscall_stack:
-    DEFS 0x100
+    DEFS 0x200
 syscall_stack_tail:

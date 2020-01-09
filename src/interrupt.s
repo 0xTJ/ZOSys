@@ -1,6 +1,6 @@
 INCLUDE "config_scz180_private.inc"
 EXTERN reset
-EXTERN _context_init, _context_save, _context_restore
+EXTERN _context_init, interrupt_enter, interupt_leave
 EXTERN syscall
 EXTERN _trap
 
@@ -42,31 +42,151 @@ vector_table:
 
 SECTION code_rom_resident
 
+; Only to be done with interrupts disabled, while in kernel space
+; void context_init(void (*pc)());
+PUBLIC _context_init
+_context_init:
+    ; Copy pc argument to DE
+    pop hl
+    pop de
+    push de
+    push hl
+    ; Copy interrupt_sp to HL and SP to interrupt_sp
+    ld hl, (interrupt_sp)
+    ld (interrupt_sp), sp
+    ; Put kernel out of address space
+    ld a, 0x11
+    out0 (CBAR), a
+    ; Load original interrupt_sp to SP
+    ld sp, hl
+    ; Clear HL
+    ld hl, 0
+    ; Push return address
+    push de
+    ; Push IX
+    push hl
+    ; Push AF, AF'
+    push hl
+    push hl
+    ; Push BC, DE, HL
+    push hl
+    push hl
+    push hl
+    ; Push BC', DE', HL'
+    push hl
+    push hl
+    push hl
+    ; Push IY
+    push hl
+    ; Copy interrupt_sp to HL and SP to interrupt_sp
+    ld hl, (interrupt_sp)
+    ld (interrupt_sp), sp
+    ; Bring kernel into address space
+    ld a, 0xF1
+    out0 (CBAR), a
+    ; Restore original SP
+    ld sp, hl
+    ; Return
+    ret
+
+
+interrupt_enter:
+    ; Pop return address to IX while pushing IX
+    ex (sp), ix
+    ; Push AF, AF'
+    push af
+    ex af,af'
+    push af
+    ; Push BC, DE, HL
+    push bc
+    push de
+    push hl
+    ; Push BC', DE', HL'
+    exx
+    push bc
+    push de
+    push hl
+    ; Push IY
+    push iy
+    ; Save SP
+    ld (interrupt_sp), sp
+    ; Use stack in user temporary
+    ld sp, interrupt_stack_tail
+    ; Save CBAR and load with kernel CBAR
+    in0 a, (CBAR)
+    ld (interrupt_cbar), a
+    ld a, 0xF1
+    out0 (CBAR), a
+    ; Push return address from IX
+    push ix
+    ; Return
+    ret
+
+
+interupt_leave:
+    ; Pop return address to IX
+    pop ix
+    ; Restore CBAR
+    ld a, (interrupt_cbar)
+    out0 (CBAR), a
+    ; Restore stack location
+    ld sp, (interrupt_sp)
+    ; Pop IY
+    pop iy
+    ; Pop HL', DE', BC'
+    pop hl
+    pop de
+    pop bc
+    exx
+    ; Pop HL, DE, BC
+    pop hl
+    pop de
+    pop bc
+    ; Pop AF', AF
+    pop af
+    ex af,af'
+    pop af
+    ; Push return address while popping to IX
+    ex (sp),ix
+    ; Return
+    ret
+
+
 PUBLIC trap
 trap:
     in0 a, (ITC)
     and 0x7F
     out0 (ITC), a
     call _trap
-    
 
 EXTERN _int_0
 int_0:
-    call _context_save
+    call interrupt_enter
     call _int_0
-    call _context_restore
-    ei
+    call interupt_leave
     reti
 
 EXTERN _int_prt0
 int_prt0:
-    call _context_save
+    call interrupt_enter
     call _int_prt0
-    call _context_restore
-    ei
+    call interupt_leave
     reti
 
 EXTERN _int_no_vector
 int_no_vector:
     ei
     reti
+    
+
+SECTION user_tmp
+
+interrupt_sp:
+    DEFW 0
+
+interrupt_cbar:
+    DEFB 0
+
+interrupt_stack:
+    DEFS 0x200
+interrupt_stack_tail:

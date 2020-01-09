@@ -6,6 +6,7 @@
 #include "ds1302.h"
 #include "context.h"
 #include <cpu.h>
+#include <intrinsic.h>
 #include <stdint.h>
 #include <string.h>
 #include <z88dk.h>
@@ -27,6 +28,7 @@ int main(void) {
     CMR = __IO_CMR_X2;
     heap_init(_malloc_heap, sizeof(_malloc_block));
 
+    CBR = 0x80;
     CBAR = 0x11;
 
     asci_0_setup();
@@ -35,9 +37,6 @@ int main(void) {
     // Create process information structures
     asci_0_puts("Initializing processes\n");
     process_init();
-    current_proc = process_new();
-    current_proc->state = RUNNING;
-    current_proc->cbr = 0x80;
     asci_0_puts("Initialized processes\n");
 
     // Start PRT0
@@ -60,13 +59,15 @@ int main(void) {
 
     int status = 0;
 
-    asci_0_put_ui(wait(&status));
+    asci_0_put_ui(waitpid(-1, &status, WNOHANG));
     asci_0_putc('\n');
     asci_0_put_ui(status);
     asci_0_putc('\n');
 
-    while (1)
-        ;
+    while (1) {
+        asci_0_puts("Running\n");
+        cpu_delay_ms(250);
+    }
 }
 
 void init(void) {
@@ -120,31 +121,18 @@ void trap(uintptr_t pc) {
 
 void int_0(void) {
     asci_0_puts("INT0\n");
+    intrinsic_ei();
 }
 
 void int_prt0(void) {
     (void) TCR;
     (void) TMDR0L;
+
+    // Add current process to ready list
     current_proc->state = READY;
-    struct process *next_proc = current_proc;
-    do {
-        next_proc = p_list_next(next_proc);
-        if (!next_proc) {
-            next_proc = p_list_front(&proc_list);
-        }
-        if (!next_proc) {
-            // Process list is empty
-            // TODO: This is fatal, treat is as such
-            current_proc->state = RUNNING;
-            return;
-        }
-    } while (next_proc->state != READY);
-    current_proc->sp = interrupt_sp;
-    current_proc->cbar = interrupt_cbar;
-    current_proc->cbr = CBR;
-    current_proc = next_proc;
-    CBR = current_proc->cbr;
-    interrupt_cbar = current_proc->cbar;
-    interrupt_sp = current_proc->sp;
-    io_led_output = current_proc->pid;
+    p_list_push_back(&process_ready_list, current_proc);
+
+    process_schedule();
+
+    intrinsic_ei();
 }

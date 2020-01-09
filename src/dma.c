@@ -40,4 +40,6 @@ int dma_memcpy(uint32_t dest, uint32_t src, uint16_t num) {
     dma_0_mode(MEMORY_INC, MEMORY_INC, true);
     dma_0_enable();
     mutex_unlock(&dma_0_mtx);
+
+    return 0;
 }

@@ -5,6 +5,7 @@
 #include "mutex.h"
 #include <arch/scz180.h>
 #include <cpu.h>
+#include <z180.h>
 #include <errno.h>
 #include <intrinsic.h>
 #include <stdbool.h>
@@ -12,35 +13,121 @@
 
 #pragma portmode z180
 
-volatile p_list_t proc_list;
+volatile p_list_t process_ready_list;
+volatile p_list_t process_zombie_list;
+
 volatile struct process *current_proc = NULL;
 volatile pid_t next_pid = 0;
 
 void process_init(void) {
-    p_list_init(&proc_list);
-}
+    p_list_init(&process_ready_list);
+    p_list_init(&process_zombie_list);
 
+    current_proc = process_new();
+    current_proc->state = RUNNING;
+    current_proc->cbr = CBR;
+}
 struct process *process_new(void) {
     // Allocate new process struct
     struct process *new_proc = malloc(sizeof(struct process));
     if (!new_proc)
         return NULL;
 
-    // Save and disable interrupts
-    uint8_t int_state = cpu_get_int_state();
-    cpu_set_int_state(0);
-
     // Setup process fields
     new_proc->pid = next_pid++;
-    new_proc->ppid = -1;
+    new_proc->ppid = 0;
     new_proc->state = EMPTY;
 
-    // Add process to list
-    p_list_push_back(&proc_list, new_proc);
-
-    // Restore interrupts before returning
-    cpu_set_int_state(int_state);
     return new_proc;
+}
+
+/*
++--------+
+| Return |
++--------+
+|   IX   |
++--------+
+|   IY   |
++--------+
+*/
+// Must enter with interrupts disabled
+// Task to be switched from must already have set to not running
+void process_switch(struct process *next_proc) __z88dk_fastcall {
+    __asm__("\
+        ld bc, hl \n\
+        push ix \n\
+        push iy \n\
+        ld iy, (_current_proc) \n\
+        in0 a, (_CBR) \n\
+        ld (iy+" PROCESS_OFFSETOF_CBR_STR "), a \n\
+        ld hl, 0 \n\
+        add hl, sp \n\
+        ld (iy+" PROCESS_OFFSETOF_SP_STR "), l \n\
+        ld (iy+" PROCESS_OFFSETOF_SP_STR "+1), h \n\
+        ");
+    __asm__("\
+        ld (_current_proc), bc \n\
+        ");
+    __asm__("\
+        ld iy, (_current_proc) \n\
+        ld l, (iy+" PROCESS_OFFSETOF_SP_STR ") \n\
+        ld h, (iy+" PROCESS_OFFSETOF_SP_STR "+1) \n\
+        ld sp, hl \n\
+        ld a, (iy+" PROCESS_OFFSETOF_CBR_STR ") \n\
+        out0 (_CBR), a \n\
+        ld a, " PROC_STATE_RUNNING_STR "\n\
+        ld (iy+" PROCESS_OFFSETOF_STATE_STR "), a \n\
+        pop iy \n\
+        pop ix \n\
+        ");
+    io_led_output = current_proc->pid;
+    (void) next_proc;
+}
+
+// Must enter with interrupts disabled
+void process_schedule(void) {
+    struct process *next_proc = p_list_pop_front(&process_ready_list);
+    if (next_proc) {
+        process_switch(next_proc);
+    } else {
+        // TODO: Panic, idle task is not available
+        while (1)
+            ;
+    }
+}
+
+uintptr_t sys_fork_helper(unsigned char child_cbr) __z88dk_fastcall __naked {
+    __asm__("\
+        di \n\
+        \n\
+        pop de \n\
+        \n\
+        in0 a, (_CBR) \n\
+        out0 (_CBR), l \n\
+        \n\
+        ld hl, sys_fork_child_reentry \n\
+        push de \n\
+        push hl \n\
+        push ix \n\
+        push iy \n\
+        \n\
+        ld hl, 0 \n\
+        add hl, sp \n\
+        \n\
+        out0 (_CBR), a \n\
+        \n\
+        pop bc \n\
+        pop bc \n\
+        pop bc \n\
+        pop bc \n\
+        \n\
+        push de \n\
+        \n\
+sys_fork_child_reentry: \n\
+        ei \n\
+        ret \n\
+        ");
+    (void) child_cbr;
 }
 
 pid_t sys_fork(void) {
@@ -51,44 +138,31 @@ pid_t sys_fork(void) {
     pid_t parent_pid = current_proc->pid;
     pid_t child_pid = child_proc->pid;
 
-    unsigned char parent_cbr = current_proc->cbr;
-    // TODO: Allow more than 7 processes
-    unsigned char child_cbr = 0x80 + 0x10 * child_proc->pid;
+    unsigned char parent_cbr = CBR;
+    unsigned char child_cbr = 0x80 + 0x10 * child_proc->pid; // TODO: Allow more than 7 processes ever
 
-    unsigned long parent_addr_base = (unsigned long) parent_cbr << 12;
-    unsigned long child_addr_base = (unsigned long) child_cbr << 12;
+    unsigned long parent_addr_base = pa_from_pfn(parent_cbr);
+    unsigned long child_addr_base = pa_from_pfn(child_cbr);
 
     child_proc->ppid = parent_pid;
     child_proc->cbr = child_cbr;
 
-    mutex_lock(&dma_0_mtx);
-    dma_0_addr(parent_addr_base, child_addr_base, 0);
-    dma_0_mode(MEMORY_INC, MEMORY_INC, true);
+    dma_memcpy(child_addr_base, parent_addr_base, 0);
+    // Bad things may happen if anything important on the stack changes between these lines
+    child_proc->sp = sys_fork_helper(child_cbr);
 
-    intrinsic_di();
+    if (current_proc->pid == parent_pid) {
+        // Add child to ready list
+        int int_state = cpu_get_int_state();
+        intrinsic_di();
+        child_proc->state = READY;
+        p_list_push_back(&process_ready_list, child_proc);
+        cpu_set_int_state(int_state);
 
-    // From this point until the restore, can't use non-globals
-    __asm__("ld hl, sys_fork_child_reentry\npush hl");
-    context_save();
-    dma_0_enable();
-    context_restore();
-    __asm__("pop hl");
-
-    child_proc->cbar = interrupt_cbar;
-    child_proc->sp = interrupt_sp;
-
-    intrinsic_ei();
-
-    mutex_unlock(&dma_0_mtx);
-
-    child_proc->state = READY;
-
-intrinsic_label(sys_fork_child_reentry)
-
-    if (current_proc->pid == parent_pid)
         return child_pid;
-    else
+    } else {
         return 0;
+    }
 }
 
 pid_t sys_waitpid(pid_t pid, uintptr_t /* int * */ wstatus, int options) {
@@ -102,7 +176,7 @@ pid_t sys_waitpid(pid_t pid, uintptr_t /* int * */ wstatus, int options) {
     bool child_exists = false;
 
     do {
-        struct process *search_proc = p_list_front(&proc_list);
+        struct process *search_proc = p_list_front(&process_zombie_list);
         while (search_proc) {
             if (search_proc->ppid == current_pid && (pid == -1 || search_proc->pid == pid)) {
                 child_exists = true;
