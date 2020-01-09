@@ -12,6 +12,7 @@ enum proc_state {
     EMPTY = 0,
     READY = 1,
     RUNNING = 2,
+    BLOCKED,
     ZOMBIE
 };
 

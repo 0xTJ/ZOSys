@@ -153,7 +153,7 @@ pid_t sys_fork(void) {
 
     if (current_proc->pid == parent_pid) {
         // Add child to ready list
-        int int_state = cpu_get_int_state();
+        uint8_t int_state = cpu_get_int_state();
         intrinsic_di();
         child_proc->state = READY;
         p_list_push_back(&process_ready_list, child_proc);

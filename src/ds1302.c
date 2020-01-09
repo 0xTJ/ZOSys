@@ -1,5 +1,4 @@
 #include "ds1302.h"
-#include "system_io.h"
 #include <arch/scz180.h>
 #include <cpu.h>
 

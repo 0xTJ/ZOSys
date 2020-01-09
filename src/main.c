@@ -34,6 +34,8 @@ int main(void) {
     asci_0_setup();
     asci_0_puts("\nStarting ZOSYS\n");
 
+    dma_0_init();
+
     // Create process information structures
     asci_0_puts("Initializing processes\n");
     process_init();

@@ -4,7 +4,11 @@
 
 #pragma portmode z180
 
-mutex_t dma_0_mtx = MUTEX_INIT;
+mutex_t dma_0_mtx;
+
+void dma_0_init(void) {
+    mutex_init(&dma_0_mtx);
+}
 
 int dma_0_addr(unsigned long src_addr, unsigned long dest_addr, unsigned int byte_count) {
     SAR0L = (src_addr >> 0) & 0xFF;

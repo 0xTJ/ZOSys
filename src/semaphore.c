@@ -1,49 +1,49 @@
-#include "mutex.h"
+#include "semaphore.h"
 #include <cpu.h>
 #include <intrinsic.h>
 
-void mutex_init(mutex_t *mtx) {
-    p_list_init(&mtx->blocked_list);
-    mtx->locked = false;
+void semaphore_init(semaphore_t *smphr) {
+    p_list_init(&smphr->blocked_list);
+    smphr->count = 1;
 }
 
-void mutex_lock(mutex_t *mtx) {
+void semaphore_wait(semaphore_t *smphr) {
     uint8_t int_state = cpu_get_int_state();
     intrinsic_di();
 
-    while (mtx->locked) {
+    smphr->count -= 1;
+
+    while (smphr->count < 0) {
         current_proc->state = BLOCKED;
-        p_list_push_back(&mtx->blocked_list, current_proc);
+        p_list_push_back(&smphr->blocked_list, current_proc);
         process_schedule();
     }
-
-    mtx->locked = true;
     
     cpu_set_int_state(int_state);
 }
 
-bool mutex_trylock(mutex_t *mtx) {
+bool semaphore_trywait(semaphore_t *smphr) {
     uint8_t int_state = cpu_get_int_state();
     intrinsic_di();
 
-    if (mtx->locked) {
+    if (smphr->count == 0) {
         cpu_set_int_state(int_state);
         return false;
     }
 
-    mtx->locked = true;
+    smphr->count -= 1;
     
     cpu_set_int_state(int_state);
     return true;
 }
 
-void mutex_unlock(mutex_t *mtx) {
+void semaphore_signal(semaphore_t *smphr) {
     uint8_t int_state = cpu_get_int_state();
     intrinsic_di();
 
-    mtx->locked = false;
+    smphr->count += 1;
 
-    struct process *unlocked_process = p_list_pop_front(&mtx->blocked_list);
+    struct process *unlocked_process = p_list_pop_front(&smphr->blocked_list);
     if (unlocked_process) {
         unlocked_process->state = READY;
         p_list_push_back(&process_ready_list, unlocked_process);
