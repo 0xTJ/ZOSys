@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "asci.h"
+
 #pragma portmode z180
 
 volatile p_list_t process_ready_list;
@@ -27,6 +29,7 @@ void process_init(void) {
     current_proc->state = RUNNING;
     current_proc->cbr = CBR;
 }
+
 struct process *process_new(void) {
     // Allocate new process struct
     struct process *new_proc = malloc(sizeof(struct process));
@@ -139,7 +142,9 @@ pid_t sys_fork(void) {
     pid_t child_pid = child_proc->pid;
 
     unsigned char parent_cbr = CBR;
-    unsigned char child_cbr = 0x80 + 0x10 * child_proc->pid; // TODO: Allow more than 7 processes ever
+    unsigned char child_cbr = mem_alloc_page_block();
+
+    asci_0_put_uc(child_cbr);
 
     unsigned long parent_addr_base = pa_from_pfn(parent_cbr);
     unsigned long child_addr_base = pa_from_pfn(child_cbr);

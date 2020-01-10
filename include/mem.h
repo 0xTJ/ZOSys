@@ -14,4 +14,7 @@ uint8_t vpn_from_va(uintptr_t va);
 uintptr_t va_from_pfn(uint8_t vpn);
 #define va_from_pfn(vpn) (((uintptr_t) (vpn) & 0xF) << PAGE_SHIFT)
 
+int mem_alloc_page(void);
+int mem_alloc_page_block(void);
+
 #endif
