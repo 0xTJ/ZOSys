@@ -11,8 +11,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "asci.h"
-
 #pragma portmode z180
 
 volatile p_list_t process_ready_list;
@@ -143,8 +141,6 @@ pid_t sys_fork(void) {
 
     unsigned char parent_cbr = CBR;
     unsigned char child_cbr = mem_alloc_page_block();
-
-    asci_0_put_uc(child_cbr);
 
     unsigned long parent_addr_base = pa_from_pfn(parent_cbr);
     unsigned long child_addr_base = pa_from_pfn(child_cbr);
