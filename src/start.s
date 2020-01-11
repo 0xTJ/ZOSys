@@ -1,6 +1,5 @@
 INCLUDE "config_scz180_public.inc"
 EXTERN vector_table, trap
-EXTERN syscall_stack_tail
 EXTERN _main
 
 SECTION rom_resident
@@ -12,10 +11,14 @@ SECTION code_crt_init
 
 PUBLIC reset
 reset:
+    ; Relocate internal registers
+    ld a, __IO_BASE_ADDRESS
+    out0 (ICR), a
+
     ; Jump to trap if in trap handler
-    ; in0 a, (ITC)
-    ; tst 0x80
-    ; jp nz, trap
+    in0 a, (ITC)
+    tst 0x80
+    jp nz, trap
 
     ; Initialize Stack Pointer
     ; Until the proper stack is setup, the top of memory is used as stack
@@ -23,10 +26,6 @@ reset:
     ld sp, 0x10000
 
     im 1
-
-    ; Relocate internal registers
-    ld a, __IO_BASE_ADDRESS
-    out0 (ICR), a
 
     ; Load interrupt vector table location
 IF vector_table & 0x1F
@@ -78,15 +77,16 @@ ENDIF
     out0 (CBR), a
 
     ; Common Area 0 to fill 0x0000-0x0FFF
-    ; Common Area 1 to fill 0x1000-0xFFFF
-    ld a, 0x11
+    ; Bank Area to fill 0x1000-0xEFFF
+    ; Common Area 1 to fill 0xF000-0xFFFF
+    ld a, 0xF1
     out0 (CBAR), a
 
 
 SECTION code_rom_resident
 
     ; Setup current SP value
-    ld sp, stack_tail
+    ld sp, kernel_stack_tail
     
     ; Enable Interrupts
     ei
@@ -115,6 +115,11 @@ argv:
 
 SECTION user_tmp
 ORG 0xF000
+
+PUBLIC kernel_stack, kernel_stack_tail
+kernel_stack:
+    DEFS 0x200
+kernel_stack_tail:
 
 SECTION kernel
 ORG 0x1000

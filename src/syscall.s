@@ -1,4 +1,5 @@
 INCLUDE "config_scz180_private.inc"
+EXTERN kernel_stack_tail
 
 MAX_SYSCALL_BYTES = 12
 
@@ -46,14 +47,14 @@ syscall:
     inc hl
     inc hl
     ; Load DE with base of copied function arguments
-    ld de, syscall_stack_tail - MAX_SYSCALL_BYTES
+    ld de, kernel_stack_tail - MAX_SYSCALL_BYTES
     ; Copy arguments to syscall stack
     ld bc, MAX_SYSCALL_BYTES
     ldir
     ; Pop HL from stack
     pop hl
     ; Load SP with base of copied function arguments
-    ld sp, syscall_stack_tail - MAX_SYSCALL_BYTES
+    ld sp, kernel_stack_tail - MAX_SYSCALL_BYTES
     ; Switch to kernel space
     ld a, 0xF1
     out0 (CBAR), a
@@ -86,8 +87,3 @@ SECTION user_tmp
 
 syscall_sp:
     DEFW 0
-
-PUBLIC syscall_stack, syscall_stack_tail
-syscall_stack:
-    DEFS 0x200
-syscall_stack_tail:

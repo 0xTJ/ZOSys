@@ -49,7 +49,7 @@ int main(void) {
     
     // Start init process at PID 1
     asci_0_puts("Starting init process\n");
-    pid_t pid = fork();
+    pid_t pid = sys_fork();
     if(pid == 0) {
         init();
         while (1)
@@ -101,6 +101,7 @@ pid_t waitpid(pid_t pid, int *wstatus, int options) __naked {
 
 void trap(uintptr_t pc) {
     bool byte_3 = ITC & __IO_ITC_UFO;
+    ITC &= 0x7F;
     pc -= (byte_3 ? 2 : 1);
     asci_0_puts("Undefined Op Code fetch occured in PID ");
     asci_0_put_uc(current_proc->pid);

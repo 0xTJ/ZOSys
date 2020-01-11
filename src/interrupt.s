@@ -154,9 +154,8 @@ interupt_leave:
 
 PUBLIC trap
 trap:
-    in0 a, (ITC)
-    and 0x7F
-    out0 (ITC), a
+    ld a, 0xF1
+    out0 (CBAR), a
     call _trap
 
 EXTERN _int_0
