@@ -5,18 +5,25 @@
 
 struct device_driver asci_driver = {
     NULL,
+    NULL,
+    NULL,
     asci_write
 };
 
-struct device asci_0;
+struct device *asci_0;
 
 void asci_0_init(void) {
     CNTLA0 = __IO_CNTLA0_TE | __IO_CNTLA0_RTS0 | __IO_CNTLA0_MODE_8N1;
     CNTLB0 = __IO_CNTLB0_PS;
 
-    asci_0.driver = &asci_driver;
-    asci_0.data_ui = 0;
-    mutex_init(&asci_0.mtx);
+    asci_0 = device_new(&asci_driver);
+
+    if (!asci_0)
+        return;
+
+    asci_0->data_ui = 0;
+
+    mutex_unlock(&asci_0->mtx);
 }
 
 void asci_0_putc(char c) {

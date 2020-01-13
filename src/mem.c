@@ -2,13 +2,13 @@
 #include <cpu.h>
 #include <intrinsic.h>
 
-#define PAGE_COUNT 256
-#define PAGES_PER_BLOCK 16
+#define PAGE_COUNT 256U
+#define PAGES_PER_BLOCK 16U
 #define PAGE_BLOCK_COUNT (PAGE_COUNT / PAGES_PER_BLOCK)
 
 uint16_t page_usage_map[PAGE_BLOCK_COUNT] = {
         0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
-        0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     };
 
 int mem_alloc_page(void) {
@@ -53,7 +53,28 @@ int mem_alloc_page_block(void) {
             // Empty page block, use it
             page_usage_map[page_block] = 0xFFFF;
             cpu_set_int_state(int_state);
-            return page_block * PAGES_PER_BLOCK;
+            unsigned int page = page_block * PAGES_PER_BLOCK;
+            return page;
+        }
+    }
+
+    cpu_set_int_state(int_state);
+    return -1;
+}
+
+int mem_alloc_page_block_specific(unsigned int page) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    if (page % PAGES_PER_BLOCK == 0) {
+        unsigned int page_block = page / PAGES_PER_BLOCK;
+        if (page_block < PAGE_BLOCK_COUNT) {
+            if (page_usage_map[page_block] == 0x0000) {
+                // Empty page block, use it
+                page_usage_map[page_block] = 0xFFFF;
+                cpu_set_int_state(int_state);
+                return page;
+            }
         }
     }
 

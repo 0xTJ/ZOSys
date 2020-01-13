@@ -16,24 +16,21 @@
 
 #pragma portmode z180
 
-unsigned char _malloc_block[0x1000];
-unsigned char *_malloc_heap = _malloc_block;
-
 int fork(void) __naked;
 pid_t wait(int *wstatus);
 pid_t waitpid(pid_t pid, int *wstatus, int options) __naked;
+
 void init(void);
 
 int main(void) {
     CMR = __IO_CMR_X2;
-    heap_init(_malloc_heap, sizeof(_malloc_block));
 
-    CBR = 0x80;
-    CBAR = 0x11;
+    // Reserve current page in use
+    if (mem_alloc_page_block_specific(CBR) < 0)
+        while (1)
+            ;
 
     kio_init();
-    kio_puts("\nStarting ZOSYS\n");
-
     dma_0_init();
 
     // Create process information structures

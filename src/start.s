@@ -1,6 +1,9 @@
 INCLUDE "config_scz180_public.inc"
 EXTERN vector_table, trap
 EXTERN _main
+EXTERN asm_heap_init
+
+HEAP_BLOCK_SIZE = 0x1000
 
 SECTION rom_resident
 ORG 0x0000
@@ -82,6 +85,11 @@ ENDIF
     ld a, 0xF1
     out0 (CBAR), a
 
+    ; Initialize heap
+    ld bc, HEAP_BLOCK_SIZE
+    ld hl, (__malloc_heap)
+    call asm_heap_init
+
 
 SECTION code_rom_resident
 
@@ -123,6 +131,12 @@ kernel_stack_tail:
 
 SECTION kernel
 ORG 0x1000
+
+PUBLIC __malloc_heap
+__malloc_block:
+    DEFS HEAP_BLOCK_SIZE
+__malloc_heap:
+    DEFW __malloc_block
 
 stack_tail = 0xF000
 

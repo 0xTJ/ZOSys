@@ -16,5 +16,6 @@ uintptr_t va_from_pfn(uint8_t vpn);
 
 int mem_alloc_page(void);
 int mem_alloc_page_block(void);
+int mem_alloc_page_block_specific(unsigned int page);
 
 #endif

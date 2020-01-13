@@ -2,7 +2,7 @@
 #include "asci.h"
 #include "device.h"
 
-struct device *kio_device = &asci_0;
+#define kio_device asci_0
 
 void kio_init(void) {
     asci_0_init();
