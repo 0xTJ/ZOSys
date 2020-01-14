@@ -1,4 +1,5 @@
 #include "ds1302.h"
+#include "io_system.h"
 #include <arch/scz180.h>
 #include <cpu.h>
 
@@ -6,7 +7,7 @@
 #define SCLK 0x40
 #define NWE 0x20
 #define CE 0x10
-#define PASSIVE 0x0F
+#define PASSIVE (IO_SYSTEM_PASSIVE & 0x0F)
 
 const uint16_t bit_delay_ms = 1;
 
@@ -44,16 +45,22 @@ int ds1302_out_byte(uint8_t send_byte) {
 }
 
 int ds1302_read_byte(uint8_t address) {
+    mutex_lock(&io_system_mtx);
+
     if (ds1302_out_byte(address) < 0) {
         io_system = NWE | PASSIVE;
         return -1;
     }
     int result = ds1302_in_byte();
     io_system = DOUT | NWE | PASSIVE;
+
+    mutex_unlock(&io_system_mtx);
     return result;
 }
 
 int ds1302_write_byte(uint8_t address, uint8_t data) {
+    mutex_lock(&io_system_mtx);
+
     if (ds1302_out_byte(address) < 0) {
         io_system = DOUT | NWE | PASSIVE;
         return -1;
@@ -61,6 +68,8 @@ int ds1302_write_byte(uint8_t address, uint8_t data) {
     io_system = DOUT | NWE | CE | PASSIVE;
     int result = ds1302_out_byte(data);
     io_system = DOUT | NWE | PASSIVE;
+
+    mutex_unlock(&io_system_mtx);
     return result;
 }
 

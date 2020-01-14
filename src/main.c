@@ -3,6 +3,9 @@
 #include "prt.h"
 #include "dma.h"
 #include "kio.h"
+#include "io_system.h"
+#include "spi.h"
+#include "sd.h"
 #include "ds1302.h"
 #include "context.h"
 #include <cpu.h>
@@ -32,6 +35,9 @@ int main(void) {
 
     kio_init();
     dma_0_init();
+    io_system_init();
+    spi_init();
+    sd_init();
 
     // Create process information structures
     kio_puts("Initializing processes\n");
@@ -58,7 +64,7 @@ int main(void) {
 
     int status = 0;
 
-    kio_put_ui(waitpid(-1, &status, WNOHANG));
+    kio_put_ui(sys_waitpid(-1, (uintptr_t) &status, WNOHANG));
     kio_putc('\n');
     kio_put_ui(status);
     kio_putc('\n');
