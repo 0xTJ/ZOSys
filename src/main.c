@@ -1,6 +1,7 @@
 #include "mem.h"
 #include "process.h"
 #include "prt.h"
+#include "device.h"
 #include "dma.h"
 #include "kio.h"
 #include "io_system.h"
@@ -75,7 +76,29 @@ int main(void) {
     }
 }
 
+uint8_t buff[512];
+
 void init(void) {
+    device_block_read(sd_0, buff, 1, 0);
+    kio_put_uc(buff[510]);
+    kio_putc(' ');
+    kio_put_uc(buff[511]);
+    kio_putc('\n');
+
+    buff[510] ^= 0xF0;
+    buff[511] ^= 0xF0;
+
+    device_block_write(sd_0, buff, 1, 0);
+
+    buff[510] ^= 0xF0;
+    buff[511] ^= 0xF0;
+
+    device_block_read(sd_0, buff, 1, 0);
+    kio_put_uc(buff[510]);
+    kio_putc(' ');
+    kio_put_uc(buff[511]);
+    kio_putc('\n');
+
     while (1) {
         cpu_delay_ms(250);
         struct tm time;

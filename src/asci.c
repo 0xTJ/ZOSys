@@ -3,10 +3,10 @@
 
 #pragma portmode z180
 
-struct device_driver asci_driver = {
-    NULL,
-    NULL,
-    NULL,
+struct device_char_driver asci_driver = {
+    dummy_open,
+    dummy_close,
+    dummy_char_read,
     asci_write
 };
 
@@ -16,7 +16,7 @@ void asci_0_init(void) {
     CNTLA0 = __IO_CNTLA0_TE | __IO_CNTLA0_RTS0 | __IO_CNTLA0_MODE_8N1;
     CNTLB0 = __IO_CNTLB0_PS;
 
-    asci_0 = device_new(&asci_driver);
+    asci_0 = device_char_new(&asci_driver);
 
     if (!asci_0)
         return;

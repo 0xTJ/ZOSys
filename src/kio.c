@@ -9,7 +9,7 @@ void kio_init(void) {
 }
 
 void kio_putc(char c) {
-    device_write(kio_device, &c, 1, 0);
+    device_char_write(kio_device, &c, 1, 0);
 }
 
 void kio_puts(char *s) {

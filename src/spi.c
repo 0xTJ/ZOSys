@@ -16,7 +16,8 @@ inline uint8_t reverse(uint8_t b) {
 
 void spi_init(void) {
     mutex_lock(&spi_mtx);
-    CNTR = 0x06;
+    spi_cs_none();
+    CNTR = 0x00;
     mutex_unlock(&spi_mtx);
 }
 
