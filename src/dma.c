@@ -46,3 +46,11 @@ int dma_memcpy(uint32_t dest, uint32_t src, uint16_t num) {
     mutex_unlock(&dma_0_mtx);
     return 0;
 }
+
+void int_dma0(void) {
+    // TODO: Implement this
+}
+
+void int_dma1(void) {
+    // TODO: Implement this
+}

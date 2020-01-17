@@ -45,7 +45,9 @@ struct process *process_new(void);
 // Must enter with interrupts disabled
 void process_switch(struct process *next_proc) __z88dk_fastcall;
 void process_schedule(void);
+void process_tick(void);
 int sys_fork(void);
 pid_t sys_waitpid(pid_t pid, uintptr_t /* int * */ wstatus, int options);
+void syscall_leave(void);
 
 #endif

@@ -16,5 +16,7 @@ int prt_start_0(uint16_t count, bool interrupt);
 int prt_start_1(uint16_t count, bool interrupt, enum prt_output_control toc);
 int prt_stop_0(void);
 int prt_stop_1(void);
+void prt_interrupt_routine_0(void (*interrupt_routine)(void));
+void prt_interrupt_routine_1(void (*interrupt_routine)(void));
 
 #endif

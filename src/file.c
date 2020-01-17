@@ -69,12 +69,12 @@ ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
-    // return file_read(open_file->file, buf, count, pos);
+    return file_read(open_file->file, buf, count, pos);
 }
 
 ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
-    // return file_write(open_file->file, buf, count, pos);
+    return file_write(open_file->file, buf, count, pos);
 }

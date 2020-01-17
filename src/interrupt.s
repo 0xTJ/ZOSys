@@ -26,15 +26,15 @@ SECTION interrupt_table
     DEFS (0x40 - ASMPC), 0xFF
 PUBLIC vector_table
 vector_table:
-    DEFW int_no_vector          ; INT1
-    DEFW int_no_vector          ; INT2
+    DEFW int_1                  ; INT1
+    DEFW int_2                  ; INT2
     DEFW int_prt0               ; PRT0
-    DEFW int_no_vector          ; PRT1
-    DEFW int_no_vector          ; DMA0
-    DEFW int_no_vector          ; DMA1
-    DEFW int_no_vector          ; CSIO
-    DEFW int_no_vector          ; ASCI0
-    DEFW int_no_vector          ; ASCI1
+    DEFW int_prt1               ; PRT1
+    DEFW int_dma0               ; DMA0
+    DEFW int_dma1               ; DMA1
+    DEFW int_csio               ; CSIO
+    DEFW int_asci0              ; ASCI0
+    DEFW int_asci0              ; ASCI1
 
     DEFS (0x66 - ASMPC), 0xFF   ; NMI
     retn
@@ -165,6 +165,20 @@ int_0:
     call interupt_leave
     reti
 
+EXTERN _int_1
+int_1:
+    call interrupt_enter
+    call _int_1
+    call interupt_leave
+    reti
+
+EXTERN _int_2
+int_2:
+    call interrupt_enter
+    call _int_2
+    call interupt_leave
+    reti
+
 EXTERN _int_prt0
 int_prt0:
     call interrupt_enter
@@ -172,9 +186,53 @@ int_prt0:
     call interupt_leave
     reti
 
+EXTERN _int_prt1
+int_prt1:
+    call interrupt_enter
+    call _int_prt1
+    call interupt_leave
+    reti
+
+EXTERN _int_dma0
+int_dma0:
+    call interrupt_enter
+    call _int_dma0
+    call interupt_leave
+    reti
+
+EXTERN _int_dma1
+int_dma1:
+    call interrupt_enter
+    call _int_dma1
+    call interupt_leave
+    reti
+
+EXTERN _int_csio
+int_csio:
+    call interrupt_enter
+    call _int_csio
+    call interupt_leave
+    reti
+
+EXTERN _int_asci0
+int_asci0:
+    call interrupt_enter
+    call _int_asci0
+    call interupt_leave
+    reti
+
+EXTERN _int_asci1
+int_asci1:
+    call interrupt_enter
+    call _int_asci1
+    call interupt_leave
+    reti
+
 EXTERN _int_no_vector
 int_no_vector:
-    ei
+    call interrupt_enter
+    call _int_no_vector
+    call interupt_leave
     reti
     
 

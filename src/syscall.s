@@ -78,9 +78,17 @@ syscall_bad:
 
 EXTERN _sys_fork
 EXTERN _sys_waitpid
+EXTERN _sys_open
+EXTERN _sys_close
+EXTERN _sys_read
+EXTERN _sys_write
 syscall_table:
     DEFW _sys_fork
     DEFW _sys_waitpid
+    DEFW _sys_open
+    DEFW _sys_close
+    DEFW _sys_read
+    DEFW _sys_write
     DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
     
 

@@ -20,9 +20,13 @@
 
 #pragma portmode z180
 
-int fork(void) __naked;
+int fork(void);
 pid_t wait(int *wstatus);
-pid_t waitpid(pid_t pid, int *wstatus, int options) __naked;
+pid_t waitpid(pid_t pid, int *wstatus, int options);
+int open(const char *pathname, int flags);
+int close(int fd);
+ssize_t read(int fd, char *buf, size_t count, unsigned long pos);
+ssize_t write(int fd, const char *buf, size_t count, unsigned long pos);
 
 void init(void);
 
@@ -50,6 +54,7 @@ int main(void) {
     // Start PRT0
     kio_puts("Initializing PRT0\n");
     const uint16_t clock_count = __CPU_CLOCK / __CPU_TIMER_SCALE / __CLOCKS_PER_SECOND;
+    prt_interrupt_routine_0(&process_tick);
     prt_start_0(clock_count, true);
     kio_puts("Initialized PRT0\n");
     
@@ -57,7 +62,10 @@ int main(void) {
     kio_puts("Starting init process\n");
     pid_t pid = sys_fork();
     if(pid == 0) {
-        init();
+        uintptr_t ret_addr = (uintptr_t) init;
+        dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &ret_addr, 2);
+        syscall_sp = 0xEFFE;
+        syscall_leave();
         while (1)
             ;
     }
@@ -78,29 +86,8 @@ int main(void) {
     }
 }
 
-uint8_t buff[512];
-void syscall_leave(void);
-
 void init(void) {
-    kio_put_uc(CBAR);
-    kio_put_uc(BBR);
-    kio_put_uc(CBR);
-    kio_putc('\n');
-
-    if (CBAR == 0xF1) {
-        uintptr_t ret_addr = (uintptr_t) init;
-
-        dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &ret_addr, 2);
-
-        syscall_sp = 0xEFFE;
-
-        syscall_leave();
-    }
-
-    kio_put_uc(CBAR);
-    kio_put_uc(BBR);
-    kio_put_uc(CBR);
-    kio_putc('\n');
+    kio_put_ui(open("Z:asci0", 0));
 
     while (1) {
         cpu_delay_ms(250);
@@ -126,6 +113,26 @@ pid_t wait(int *wstatus) {
 pid_t waitpid(pid_t pid, int *wstatus, int options) __naked {
     __asm__("ld a, 1\nrst 8\nret");
     (void) pid, (void) wstatus, (void) options;
+}
+
+int open(const char *pathname, int flags) __naked {
+    __asm__("ld a, 2\nrst 8\nret");
+    (void) pathname, (void) flags;
+}
+
+int close(int fd) __naked {
+    __asm__("ld a, 3\nrst 8\nret");
+    (void) fd;
+}
+
+ssize_t read(int fd, char *buf, size_t count, unsigned long pos) __naked {
+    __asm__("ld a, 4\nrst 8\nret");
+    (void) fd, (void) buf, (void) count, (void) pos;
+}
+
+ssize_t write(int fd, const char *buf, size_t count, unsigned long pos) __naked {
+    __asm__("ld a, 5\nrst 8\nret");
+    (void) fd, (void) buf, (void) count, (void) pos;
 }
 
 void trap(uintptr_t pc) {
@@ -156,15 +163,17 @@ void int_0(void) {
     intrinsic_ei();
 }
 
-void int_prt0(void) {
-    (void) TCR;
-    (void) TMDR0L;
+void int_1(void) {
+    kio_puts("INT1\n");
+    intrinsic_ei();
+}
 
-    // Add current process to ready list
-    current_proc->state = READY;
-    p_list_push_back(&process_ready_list, current_proc);
+void int_2(void) {
+    kio_puts("INT2\n");
+    intrinsic_ei();
+}
 
-    process_schedule();
-
+void int_no_vector(void) {
+    kio_puts("Unhandled Interrupt Occured\n");
     intrinsic_ei();
 }

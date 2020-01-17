@@ -4,6 +4,8 @@
 
 #define kio_device asci_0
 
+extern struct device_char *asci_0;
+
 void kio_init(void) {
     asci_0_init();
 }

@@ -3,8 +3,6 @@
 
 #include "device.h"
 
-extern struct device_char *asci_0;
-
 void asci_0_init(void);
 void asci_0_putc(char c);
 

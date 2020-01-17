@@ -52,3 +52,7 @@ void spi_cs1(void) {
 void spi_cs2(void) {
     io_system = CS1 | PASSIVE;
 }
+
+void int_csio(void) {
+    // TODO: Implement this
+}

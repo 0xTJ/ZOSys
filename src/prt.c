@@ -1,6 +1,13 @@
 #include "prt.h"
+#include <cpu.h>
+#include <intrinsic.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #pragma portmode z180
+
+void (*interrupt_routine_0)(void) = NULL;
+void (*interrupt_routine_1)(void) = NULL;
 
 int prt_start_0(uint16_t count, bool interrupt) {
     TMDR0L = count & 0xFF;
@@ -28,4 +35,34 @@ int prt_stop_0(void) {
 int prt_stop_1(void) {
     TCR = TCR & ~__IO_TCR_TDE1;
     return 0;
+}
+
+void prt_interrupt_routine_0(void (*interrupt_routine)(void)) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+    interrupt_routine_0 = interrupt_routine;
+    cpu_set_int_state(int_state);
+}
+
+void prt_interrupt_routine_1(void (*interrupt_routine)(void)) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+    interrupt_routine_1 = interrupt_routine;
+    cpu_set_int_state(int_state);
+}
+
+void int_prt0(void) {
+    (void) TCR;
+    (void) TMDR0L;
+
+    if (interrupt_routine_0)
+        interrupt_routine_0();
+}
+
+void int_prt1(void) {
+    (void) TCR;
+    (void) TMDR1L;
+
+    if (interrupt_routine_1)
+        interrupt_routine_1();
 }
