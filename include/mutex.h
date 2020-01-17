@@ -1,7 +1,6 @@
 #ifndef INCLUDE_MUTEX_H
 #define INCLUDE_MUTEX_H
 
-#include "process.h"
 #include <adt.h>
 #include <stdbool.h>
 

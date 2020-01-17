@@ -1,4 +1,5 @@
 INCLUDE "config_scz180_private.inc"
+PUBLIC _syscall_leave
 EXTERN kernel_stack_tail
 
 MAX_SYSCALL_BYTES = 12
@@ -37,11 +38,11 @@ syscall:
     or h
     jp z, syscall_bad
     ; Save SP
-    ld (syscall_sp), sp
+    ld (_syscall_sp), sp
     ; Save HL to stack
     push hl
     ; Load HL with base of function arguments
-    ld hl, (syscall_sp)
+    ld hl, (_syscall_sp)
     inc hl
     inc hl
     inc hl
@@ -59,15 +60,15 @@ syscall:
     ld a, 0xF1
     out0 (CBAR), a
     ; Call function in HL
-    ld de, syscall_ret
+    ld de, _syscall_leave
     push de
     jp (hl)
-syscall_ret:
+_syscall_leave:
     ; Switch to user space
     ld a, 0x11
     out0 (CBAR), a
     ; Restore SP
-    ld sp, (syscall_sp)
+    ld sp, (_syscall_sp)
     ; Return
     ret
 syscall_bad:
@@ -85,5 +86,6 @@ syscall_table:
 
 SECTION user_tmp
 
-syscall_sp:
+PUBLIC _syscall_sp
+_syscall_sp:
     DEFW 0

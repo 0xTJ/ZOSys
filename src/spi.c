@@ -1,4 +1,5 @@
 #include "spi.h"
+#include <arch/scz180.h>
 #include <cpu.h>
 
 #pragma portmode z180

@@ -2,7 +2,6 @@
 #define INCLUDE_IO_SYSTEM_H
 
 #include "mutex.h"
-#include <arch/scz180.h>
 
 #define IO_SYSTEM_PASSIVE 0xFF
 

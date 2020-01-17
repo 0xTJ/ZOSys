@@ -10,6 +10,7 @@
 #include <intrinsic.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #pragma portmode z180
 
@@ -38,6 +39,7 @@ struct process *process_new(void) {
     new_proc->pid = next_pid++;
     new_proc->ppid = 0;
     new_proc->state = EMPTY;
+    memset(new_proc->open_files, 0, sizeof(new_proc->open_files));
 
     return new_proc;
 }

@@ -26,6 +26,8 @@ pid_t waitpid(pid_t pid, int *wstatus, int options) __naked;
 
 void init(void);
 
+extern uintptr_t syscall_sp;
+
 int main(void) {
     CMR = __IO_CMR_X2;
 
@@ -77,26 +79,27 @@ int main(void) {
 }
 
 uint8_t buff[512];
+void syscall_leave(void);
 
 void init(void) {
-    device_block_read(sd_0, buff, 1, 0);
-    kio_put_uc(buff[510]);
-    kio_putc(' ');
-    kio_put_uc(buff[511]);
+    kio_put_uc(CBAR);
+    kio_put_uc(BBR);
+    kio_put_uc(CBR);
     kio_putc('\n');
 
-    buff[510] ^= 0xF0;
-    buff[511] ^= 0xF0;
+    if (CBAR == 0xF1) {
+        uintptr_t ret_addr = (uintptr_t) init;
 
-    device_block_write(sd_0, buff, 1, 0);
+        dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &ret_addr, 2);
 
-    buff[510] ^= 0xF0;
-    buff[511] ^= 0xF0;
+        syscall_sp = 0xEFFE;
 
-    device_block_read(sd_0, buff, 1, 0);
-    kio_put_uc(buff[510]);
-    kio_putc(' ');
-    kio_put_uc(buff[511]);
+        syscall_leave();
+    }
+
+    kio_put_uc(CBAR);
+    kio_put_uc(BBR);
+    kio_put_uc(CBR);
     kio_putc('\n');
 
     while (1) {

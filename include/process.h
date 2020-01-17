@@ -1,6 +1,7 @@
 #ifndef INCLUDE_PROCESS_H
 #define INCLUDE_PROCESS_H
 
+#include "file.h"
 #include <adt.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -27,6 +28,7 @@ struct process {
     pid_t pid;
     pid_t ppid;
     int status;
+    struct open_file *open_files[MAX_OPEN_FILES];
 };
 
 #define PROCESS_OFFSETOF_SP_STR "4"

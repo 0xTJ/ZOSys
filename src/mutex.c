@@ -1,4 +1,5 @@
 #include "mutex.h"
+#include "process.h"
 #include <cpu.h>
 #include <intrinsic.h>
 

@@ -41,13 +41,13 @@
 #define SD_MAX_WRITE_ATTEMPTS   3907
 
 struct device_block_driver sd_driver = {
-    dummy_open,
-    dummy_close,
+    dummy_block_open,
+    dummy_block_close,
     sd_read,
     sd_write
 };
 
-struct device *sd_0;
+struct device_block *sd_0;
 
 void sd_sel(unsigned char card) {
     switch (card) {
@@ -360,16 +360,16 @@ int sd_init(void) {
     return 0;
 }
 
-ssize_t sd_read(struct device *dev, char *buf, unsigned int block_count, unsigned long pos) {
+ssize_t sd_read(struct device_block *dev, char *buf, unsigned int block_count, unsigned long pos) {
     ssize_t result = 0;
     uint8_t token = 0xFF;
     
     while (block_count) {
         sd_read_single_block(pos, buf, &token);
 
-        pos += dev->block.block_size;
-        buf += dev->block.block_size;
-        result += dev->block.block_size;
+        pos += dev->block_size;
+        buf += dev->block_size;
+        result += dev->block_size;
 
         block_count -= 1;
     }
@@ -377,16 +377,16 @@ ssize_t sd_read(struct device *dev, char *buf, unsigned int block_count, unsigne
     return result;
 }
 
-ssize_t sd_write(struct device *dev, const char *buf, unsigned int block_count, unsigned long pos) {
+ssize_t sd_write(struct device_block *dev, const char *buf, unsigned int block_count, unsigned long pos) {
     ssize_t result = 0;
     uint8_t token = 0xFF;
     
     while (block_count) {
         sd_write_single_block(pos, buf, &token);
 
-        pos += dev->block.block_size;
-        buf += dev->block.block_size;
-        result += dev->block.block_size;
+        pos += dev->block_size;
+        buf += dev->block_size;
+        result += dev->block_size;
 
         block_count -= 1;
     }

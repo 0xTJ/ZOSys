@@ -4,13 +4,13 @@
 #pragma portmode z180
 
 struct device_char_driver asci_driver = {
-    dummy_open,
-    dummy_close,
+    dummy_char_open,
+    dummy_char_close,
     dummy_char_read,
     asci_write
 };
 
-struct device *asci_0;
+struct device_char *asci_0;
 
 void asci_0_init(void) {
     CNTLA0 = __IO_CNTLA0_TE | __IO_CNTLA0_RTS0 | __IO_CNTLA0_MODE_8N1;
@@ -32,7 +32,7 @@ void asci_0_putc(char c) {
     TDR0 = c;
 }
 
-ssize_t asci_write(struct device *dev, const char *buf, size_t count, unsigned long pos) {
+ssize_t asci_write(struct device_char *dev, const char *buf, size_t count, unsigned long pos) {
     (void) pos;
 
     ssize_t result = -1;
