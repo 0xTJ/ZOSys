@@ -4,6 +4,6 @@
 #include "device.h"
 
 void asci_0_init(void);
-void asci_0_putc(char c);
+void asci_1_init(void);
 
 #endif

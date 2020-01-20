@@ -1,5 +1,7 @@
 #include "asci.h"
+#include "circular_buffer.h"
 #include <cpu.h>
+#include <intrinsic.h>
 
 #pragma portmode z180
 
@@ -13,9 +15,27 @@ struct device_char_driver asci_driver = {
 struct device_char *asci_0;
 struct device_char *asci_1;
 
+unsigned char asci0_rx_buf[32];
+struct circular_buffer asci0_rx_circ_buf = {
+    asci0_rx_buf,
+    sizeof(asci0_rx_buf)
+};
+
+char asci0_tx_buf[32];
+struct circular_buffer asci0_tx_circ_buf = {
+    asci0_tx_buf,
+    sizeof(asci0_tx_buf)
+};
+
 void asci_0_init(void) {
-    CNTLA0 = __IO_CNTLA0_TE | __IO_CNTLA0_RTS0 | __IO_CNTLA0_MODE_8N1;
-    CNTLB0 = __IO_CNTLB0_PS;
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    CNTLA0 = __IO_CNTLA0_RE | __IO_CNTLA0_TE | __IO_CNTLA0_RTS0 | __IO_CNTLA0_MODE_8N1;
+    CNTLB0 = __IO_CNTLB0_PS | __IO_CNTLB0_SS_DIV_1;
+    STAT0 = __IO_STAT0_RIE;
+
+    cpu_set_int_state(int_state);
 
     asci_0 = device_char_new(&asci_driver);
 
@@ -41,35 +61,48 @@ void asci_1_init(void) {
     mutex_unlock(&asci_1->mtx);
 }
 
-void asci_0_putc(char c) {
-    while (!(STAT0 & 0x02))
-        ;
-    TDR0 = c;
+int asci_0_putc(char c) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    if (circular_buffer_put(&asci0_tx_circ_buf, c) < 1) {
+        cpu_set_int_state(int_state);
+        return -1;
+    }
+
+    STAT0 |= __IO_STAT0_TIE;
+
+    cpu_set_int_state(int_state);
+    return c;
 }
 
-void asci_1_putc(char c) {
+int asci_1_putc(char c) {
     while (!(STAT1 & 0x02))
         ;
     TDR1 = c;
+    return c;
 }
 
 ssize_t asci_write(struct device_char *dev, const char *buf, size_t count, unsigned long pos) {
     (void) pos;
 
     ssize_t result = -1;
+    size_t i;
 
     mutex_lock(&dev->mtx);
 
     if (dev->data_ui == 0) {
-        for (size_t i = 0; i < count; ++i) {
-            asci_0_putc(buf[i]);
+        for (i = 0; i < count; ++i) {
+            if (asci_0_putc(buf[i]) < 0)
+                break;
         }
-        result = count;
+        result = i;
     } else if (dev->data_ui == 1) {
-        for (size_t i = 0; i < count; ++i) {
-            asci_1_putc(buf[i]);
+        for (i = 0; i < count; ++i) {
+            if (asci_1_putc(buf[i]) < 0)
+                break;
         }
-        result = count;
+        result = i;
     } else {
         // Not ASCI0 or ASCI1
     }
@@ -80,7 +113,23 @@ ssize_t asci_write(struct device_char *dev, const char *buf, size_t count, unsig
 }
 
 void int_asci0(void) {
-    // TODO: Implement this
+    uint8_t stat = STAT0;
+
+    if (stat & __IO_STAT0_RDRF) {
+        // Received a byte
+        char receive_byte = RDR0;
+        circular_buffer_put(&asci0_rx_circ_buf, receive_byte);
+    }
+
+    if (stat & __IO_STAT0_TDRE && stat & __IO_STAT0_TIE) {
+        // Ready to send a byte
+        int send_byte = circular_buffer_get(&asci0_tx_circ_buf);
+        if (send_byte < 0) {
+            STAT0 &= ~__IO_STAT0_TIE;
+        } else {
+            TDR0 = send_byte;
+        }
+    }
 }
 
 void int_asci1(void) {

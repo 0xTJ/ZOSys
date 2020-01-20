@@ -6,7 +6,7 @@ EXTERN _trap
 
 SECTION interrupt_table
 
-    DEFS (0x00 - ASMPC), 0xFF   ; RST 0 / RESET
+    DEFS (0x00 - ASMPC), 0xFF   ; RST 0 / RESET / TRAP
     jp reset
     DEFS (0x08 - ASMPC), 0xFF   ; RST 8 / SYSCALL
     jmp syscall
@@ -34,7 +34,7 @@ vector_table:
     DEFW int_dma1               ; DMA1
     DEFW int_csio               ; CSIO
     DEFW int_asci0              ; ASCI0
-    DEFW int_asci0              ; ASCI1
+    DEFW int_asci1              ; ASCI1
 
     DEFS (0x66 - ASMPC), 0xFF   ; NMI
     retn
@@ -163,6 +163,7 @@ int_0:
     call interrupt_enter
     call _int_0
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_1
@@ -170,6 +171,7 @@ int_1:
     call interrupt_enter
     call _int_1
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_2
@@ -177,6 +179,7 @@ int_2:
     call interrupt_enter
     call _int_2
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_prt0
@@ -184,6 +187,7 @@ int_prt0:
     call interrupt_enter
     call _int_prt0
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_prt1
@@ -191,6 +195,7 @@ int_prt1:
     call interrupt_enter
     call _int_prt1
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_dma0
@@ -198,6 +203,7 @@ int_dma0:
     call interrupt_enter
     call _int_dma0
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_dma1
@@ -205,6 +211,7 @@ int_dma1:
     call interrupt_enter
     call _int_dma1
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_csio
@@ -212,6 +219,7 @@ int_csio:
     call interrupt_enter
     call _int_csio
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_asci0
@@ -219,6 +227,7 @@ int_asci0:
     call interrupt_enter
     call _int_asci0
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_asci1
@@ -226,6 +235,7 @@ int_asci1:
     call interrupt_enter
     call _int_asci1
     call interupt_leave
+    ei
     reti
 
 EXTERN _int_no_vector
@@ -233,6 +243,7 @@ int_no_vector:
     call interrupt_enter
     call _int_no_vector
     call interupt_leave
+    ei
     reti
     
 

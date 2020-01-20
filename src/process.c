@@ -99,17 +99,13 @@ void process_schedule(void) {
     }
 }
 
+// Must enter with interrupts disabled
 void process_tick(void) {
-    (void) TCR;
-    (void) TMDR0L;
-
     // Add current process to ready list
     current_proc->state = READY;
     p_list_push_back(&process_ready_list, current_proc);
 
     process_schedule();
-
-    intrinsic_ei();
 }
 
 uintptr_t sys_fork_helper(unsigned char child_cbr) __z88dk_fastcall __naked {
