@@ -90,6 +90,16 @@ void process_switch(struct process *next_proc) __z88dk_fastcall {
 // Must enter with interrupts disabled
 void process_schedule(void) {
     struct process *next_proc = p_list_pop_front(&process_ready_list);
+
+    if (next_proc->pid == 0) {
+        // Is idle process
+        if (!p_list_empty(&process_ready_list)) {
+            // Another process can run
+            p_list_push_back(&process_ready_list, next_proc);
+            next_proc = p_list_pop_front(&process_ready_list);
+        }
+    }
+
     if (next_proc) {
         process_switch(next_proc);
     } else {

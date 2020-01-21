@@ -77,10 +77,8 @@ int main(void) {
 
     sys_waitpid(-1, (uintptr_t) &status, WNOHANG);
 
-    while (1) {
-        kio_puts("Running\n");
-        cpu_delay_ms(250);
-    }
+    while (1)
+        ;
 }
 
 void init(void) {
@@ -88,18 +86,8 @@ void init(void) {
     int stdout = open("Z:asci0", 0);
     int stderr = open("Z:asci0", 0);
 
-    write(stdout, "hello", 5, 0);
-
     while (1) {
-        cpu_delay_ms(250);
-        struct tm time;
-        ds1302_time_get(&time);
-        kio_put_uc(time.tm_hour);
-        kio_putc(':');
-        kio_put_uc(time.tm_min);
-        kio_putc(':');
-        kio_put_uc(time.tm_sec);
-        kio_putc('\n');
+        write(stdout, "init\n", 5, 0);
     }
 }
 

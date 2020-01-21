@@ -29,6 +29,18 @@ struct circular_buffer asci0_tx_circ_buf = {
     sizeof(asci0_tx_buf)
 };
 
+unsigned char asci1_rx_buf[32];
+struct circular_buffer asci1_rx_circ_buf = {
+    asci1_rx_buf,
+    sizeof(asci1_rx_buf)
+};
+
+char asci1_tx_buf[32];
+struct circular_buffer asci1_tx_circ_buf = {
+    asci1_tx_buf,
+    sizeof(asci1_tx_buf)
+};
+
 void asci_0_init(void) {
     uint8_t int_state = cpu_get_int_state();
     intrinsic_di();
@@ -54,8 +66,8 @@ void asci_1_init(void) {
     intrinsic_di();
 
     CNTLA1 = __IO_CNTLA1_TE | __IO_CNTLA1_CKA1D | __IO_CNTLA1_MODE_8N1;
-    CNTLB1 = __IO_CNTLB1_PS;
-    // STAT1 = __IO_STAT1_RIE; // TODO: Enable this
+    CNTLB1 = __IO_CNTLB1_PS | __IO_CNTLB1_SS_DIV_1;
+    STAT1 = __IO_STAT1_RIE;
 
     cpu_set_int_state(int_state);
 
@@ -85,9 +97,17 @@ int asci_0_putc(char c) {
 }
 
 int asci_1_putc(char c) {
-    while (!(STAT1 & 0x02))
-        ;
-    TDR1 = c;
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    if (circular_buffer_put(&asci1_tx_circ_buf, c) < 1) {
+        cpu_set_int_state(int_state);
+        return -1;
+    }
+
+    STAT1 |= __IO_STAT1_TIE;
+
+    cpu_set_int_state(int_state);
     return (unsigned char) c;
 }
 
@@ -141,5 +161,21 @@ void int_asci0(void) {
 }
 
 void int_asci1(void) {
-    // TODO: Implement this
+    uint8_t stat = STAT1;
+
+    if (stat & __IO_STAT1_RDRF) {
+        // Received a byte
+        char receive_byte = RDR1;
+        circular_buffer_put(&asci1_rx_circ_buf, receive_byte);
+    }
+
+    if (stat & __IO_STAT1_TDRE && stat & __IO_STAT1_TIE) {
+        // Ready to send a byte
+        int send_byte = circular_buffer_get(&asci1_tx_circ_buf);
+        if (send_byte < 1) {
+            STAT1 &= ~__IO_STAT1_TIE;
+        } else {
+            TDR1 = send_byte;
+        }
+    }
 }
