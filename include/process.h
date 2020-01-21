@@ -2,6 +2,7 @@
 #define INCLUDE_PROCESS_H
 
 #include "file.h"
+#include "mem.h"
 #include <adt.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -47,7 +48,7 @@ void process_switch(struct process *next_proc) __z88dk_fastcall;
 void process_schedule(void);
 void process_tick(void);
 int sys_fork(void);
-pid_t sys_waitpid(pid_t pid, uintptr_t /* int * */ wstatus, int options);
+pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options);
 void syscall_leave(void);
 
 #endif

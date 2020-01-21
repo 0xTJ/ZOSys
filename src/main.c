@@ -25,10 +25,11 @@ pid_t wait(int *wstatus);
 pid_t waitpid(pid_t pid, int *wstatus, int options);
 int open(const char *pathname, int flags);
 int close(int fd);
-ssize_t read(int fd, char *buf, size_t count, unsigned long pos);
-ssize_t write(int fd, const char *buf, size_t count, unsigned long pos);
+ssize_t read(int fd, char *buf, size_t count);
+ssize_t write(int fd, const char *buf, size_t count);
 
 void init(void);
+void shell(void);
 
 extern uintptr_t syscall_sp;
 
@@ -77,14 +78,34 @@ int main(void) {
         ;
 }
 
+int stdin_fd;
+int stdout_fd;
+int stderr_fd;
+
 void init(void) {
-    int stdin = open("Z:asci0", 0);
-    int stdout = open("Z:asci0", 0);
-    int stderr = open("Z:asci0", 0);
+    stdin_fd = open("Z:asci0", 0);
+    stdout_fd = open("Z:asci0", 0);
+    stderr_fd = open("Z:asci0", 0);
+
+    // pid_t pid = sys_fork();
+    // if(pid == 0) {
+    //     shell();
+    //     // TODO: exit instead of looping
+    //     while (1)
+    //         ;
+    // }
 
     while (1) {
-        write(stdout, "init\n", 5, 0);
+        int status;
+        wait(&status);
     }
+}
+
+void shell(void) {
+    write(stdout_fd, "In shell\n", 9);
+
+    while (1)
+        ;
 }
 
 pid_t fork(void) __naked {
@@ -110,14 +131,14 @@ int close(int fd) __naked {
     (void) fd;
 }
 
-ssize_t read(int fd, char *buf, size_t count, unsigned long pos) __naked {
+ssize_t read(int fd, char *buf, size_t count) __naked {
     __asm__("ld a, 4\nrst 8\nret");
-    (void) fd, (void) buf, (void) count, (void) pos;
+    (void) fd, (void) buf, (void) count;
 }
 
-ssize_t write(int fd, const char *buf, size_t count, unsigned long pos) __naked {
+ssize_t write(int fd, const char *buf, size_t count) __naked {
     __asm__("ld a, 5\nrst 8\nret");
-    (void) fd, (void) buf, (void) count, (void) pos;
+    (void) fd, (void) buf, (void) count;
 }
 
 void trap(uintptr_t pc) {

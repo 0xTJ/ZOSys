@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#define USER_PTR(type) uintptr_t
 #define MEM_USER_BUFFER_SIZE 256
 
 #define PAGE_SHIFT 12

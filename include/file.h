@@ -2,6 +2,7 @@
 #define INCLUDE_FILE_H
 
 #include "device.h"
+#include "mem.h"
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -30,9 +31,9 @@ int file_close(struct file *file);
 ssize_t file_read(struct file *file, char *buf, size_t count, unsigned long pos);
 ssize_t file_write(struct file *file, const char *buf, size_t count, unsigned long pos);
 
-int sys_open(uintptr_t pathname, int flags);
+int sys_open(USER_PTR(char) pathname, int flags);
 int sys_close(int fd);
-ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos);
-ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos);
+ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count);
+ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count);
 
 #endif

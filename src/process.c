@@ -1,7 +1,6 @@
 #include "process.h"
 #include "context.h"
 #include "dma.h"
-#include "mem.h"
 #include "mutex.h"
 #include <arch/scz180.h>
 #include <cpu.h>
@@ -187,7 +186,7 @@ pid_t sys_fork(void) {
     }
 }
 
-pid_t sys_waitpid(pid_t pid, uintptr_t /* int * */ wstatus, int options) {
+pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options) {
     if (options & ~(WNOHANG))
         return -1;
     bool nohang = options & WNOHANG;

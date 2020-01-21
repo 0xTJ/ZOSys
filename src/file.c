@@ -1,5 +1,4 @@
 #include "file.h"
-#include "mem.h"
 #include "process.h"
 #include <stdlib.h>
 #include <string.h>
@@ -72,7 +71,7 @@ ssize_t file_write(struct file *file, const char *buf, size_t count, unsigned lo
     }
 }
 
-int sys_open(uintptr_t pathname, int flags) {
+int sys_open(USER_PTR(char) pathname, int flags) {
     int found_fd = -1;
     for (found_fd = 0; found_fd < MAX_OPEN_FILES; ++found_fd)
         if (!current_proc->open_files[found_fd])
@@ -108,7 +107,7 @@ int sys_close(int fd) {
     return 0;
 }
 
-ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
+ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count) {
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
@@ -126,7 +125,7 @@ ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
             continue;
         
         char *buf_copy = mem_get_user_buffer();
-        ssize_t this_count = file_read(open_file->file, buf_copy, count, pos);
+        ssize_t this_count = file_read(open_file->file, buf_copy, count, open_file->pos);
 
         if (this_count < 0) {
             if (done_count == 0)
@@ -136,6 +135,7 @@ ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
 
         mem_copy_from_user_buffer(buf + done_count, count);
         done_count += this_count;
+        open_file->pos += this_count;
         if (this_count < inc_count)
             break;
     }
@@ -143,7 +143,7 @@ ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     return done_count;
 }
 
-ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
+ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count) {
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
@@ -161,7 +161,7 @@ ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
             continue;
         
         char *buf_copy = mem_copy_to_user_buffer(buf + done_count, inc_count);
-        ssize_t this_count = file_write(open_file->file, buf_copy, inc_count, pos);
+        ssize_t this_count = file_write(open_file->file, buf_copy, inc_count, open_file->pos);
 
         if (this_count < 0) {
             if (done_count == 0)
@@ -170,6 +170,7 @@ ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
         }
 
         done_count += this_count;
+        open_file->pos += this_count;
         if (this_count < inc_count)
             break;
     }
