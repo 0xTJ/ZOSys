@@ -43,6 +43,7 @@ int dma_memcpy(uint32_t dest, uint32_t src, uint16_t num) {
     dma_0_addr(src, dest, num);
     dma_0_mode(MEMORY_INC, MEMORY_INC, true);
     dma_0_enable();
+    // Burst mode, so no need to check completion
     mutex_unlock(&dma_0_mtx);
     return 0;
 }

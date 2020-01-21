@@ -3,6 +3,8 @@
 #include <cpu.h>
 #include <intrinsic.h>
 
+#include "kio.h"
+
 #pragma portmode z180
 
 struct device_char_driver asci_driver = {
@@ -48,8 +50,14 @@ void asci_0_init(void) {
 }
 
 void asci_1_init(void) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
     CNTLA1 = __IO_CNTLA1_TE | __IO_CNTLA1_CKA1D | __IO_CNTLA1_MODE_8N1;
     CNTLB1 = __IO_CNTLB1_PS;
+    // STAT1 = __IO_STAT1_RIE; // TODO: Enable this
+
+    cpu_set_int_state(int_state);
 
     asci_1 = device_char_new(&asci_driver);
 
@@ -73,14 +81,14 @@ int asci_0_putc(char c) {
     STAT0 |= __IO_STAT0_TIE;
 
     cpu_set_int_state(int_state);
-    return c;
+    return (unsigned char) c;
 }
 
 int asci_1_putc(char c) {
     while (!(STAT1 & 0x02))
         ;
     TDR1 = c;
-    return c;
+    return (unsigned char) c;
 }
 
 ssize_t asci_write(struct device_char *dev, const char *buf, size_t count, unsigned long pos) {

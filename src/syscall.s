@@ -89,7 +89,7 @@ syscall_table:
     DEFW _sys_close
     DEFW _sys_read
     DEFW _sys_write
-    DEFS (256 - (ASMPC - syscall_table)) * 2, 0x00
+    DEFS (0x100 - (ASMPC - syscall_table)) * 2, 0x00
     
 
 SECTION user_tmp
@@ -97,3 +97,7 @@ SECTION user_tmp
 PUBLIC _syscall_sp
 _syscall_sp:
     DEFW 0
+
+PUBLIC _user_buffer
+_user_buffer:
+    DEFS 0x100

@@ -75,10 +75,7 @@ int main(void) {
 
     int status = 0;
 
-    kio_put_ui(sys_waitpid(-1, (uintptr_t) &status, WNOHANG));
-    kio_putc('\n');
-    kio_put_ui(status);
-    kio_putc('\n');
+    sys_waitpid(-1, (uintptr_t) &status, WNOHANG);
 
     while (1) {
         kio_puts("Running\n");
@@ -87,7 +84,11 @@ int main(void) {
 }
 
 void init(void) {
-    kio_put_ui(open("Z:asci0", 0));
+    int stdin = open("Z:asci0", 0);
+    int stdout = open("Z:asci0", 0);
+    int stderr = open("Z:asci0", 0);
+
+    write(stdout, "hello", 5, 0);
 
     while (1) {
         cpu_delay_ms(250);

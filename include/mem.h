@@ -2,6 +2,9 @@
 #define INCLUDE_MEM_H
 
 #include <stdint.h>
+#include <sys/types.h>
+
+#define MEM_USER_BUFFER_SIZE 256
 
 #define PAGE_SHIFT 12
 
@@ -17,5 +20,9 @@ uintptr_t va_from_pfn(uint8_t vpn);
 int mem_alloc_page(void);
 int mem_alloc_page_block(void);
 int mem_alloc_page_block_specific(unsigned int page);
+
+char *mem_get_user_buffer(void);
+char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count);
+char *mem_copy_from_user_buffer(uintptr_t user_ptr, size_t count);
 
 #endif

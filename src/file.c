@@ -1,13 +1,53 @@
 #include "file.h"
+#include "mem.h"
 #include "process.h"
 #include <stdlib.h>
+#include <string.h>
+
+extern struct device_char *asci_0;
+
+struct file asci_0_file = {
+    FILE_CHAR_DEV
+};
 
 struct file *file_open(const char *pathname, int flags) {
-    return NULL;
+    struct file *file = NULL;
+    int result = -1;
+
+    if (strcmp(pathname, "Z:asci0") == 0) {
+        asci_0_file.dev_char = asci_0;
+        file = &asci_0_file;
+    }
+
+    if (file) {
+        switch (file->type) {
+        case FILE_CHAR_DEV:
+            result = device_char_open(file->dev_char, flags);
+            break;
+        case FILE_BLOCK_DEV:
+            result = device_block_open(file->dev_block, flags);
+            break;
+        default:
+            result = -1;
+            break;
+        }
+    }
+
+    if (result < 0)
+        file = NULL;
+
+    return file;
 }
 
 int file_close(struct file *file) {
-    return 0;
+    switch (file->type) {
+    case FILE_CHAR_DEV:
+        return device_char_close(file->dev_char);
+    case FILE_BLOCK_DEV:
+        return device_block_close(file->dev_block);
+    default:
+        return -1;
+    }
 }
 
 ssize_t file_read(struct file *file, char *buf, size_t count, unsigned long pos) {
@@ -44,7 +84,10 @@ int sys_open(uintptr_t pathname, int flags) {
     if (!open_file)
         return -1;
 
-    open_file->file = file_open(pathname, flags);
+    char *pathname_copied = mem_copy_to_user_buffer(pathname, MEM_USER_BUFFER_SIZE);
+    pathname_copied[MEM_USER_BUFFER_SIZE] = '\0';
+
+    open_file->file = file_open(pathname_copied, flags);
     if (!open_file->file) {
         free(open_file);
         return -1;
@@ -69,12 +112,24 @@ ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
-    return file_read(open_file->file, buf, count, pos);
+
+    // TODO: Handle reads greater than MEM_USER_BUFFER_SIZE
+
+    char *buf_copy = mem_get_user_buffer();
+    ssize_t result = file_read(open_file->file, buf_copy, count, pos);
+
+    mem_copy_from_user_buffer(buf, count);
+    return result;
 }
 
 ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
-    return file_write(open_file->file, buf, count, pos);
+
+    // TODO: Handle writes greater than MEM_USER_BUFFER_SIZE
+
+    char *buf_copy = mem_copy_to_user_buffer(buf, count);
+
+    return file_write(open_file->file, buf_copy, count, pos);
 }
