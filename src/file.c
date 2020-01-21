@@ -113,13 +113,34 @@ ssize_t sys_read(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     if (!open_file)
         return -1;
 
-    // TODO: Handle reads greater than MEM_USER_BUFFER_SIZE
+    // Check bounds
+    if (buf < 0x1000 || (unsigned long) buf + count >= 0xF000)
+        return -1;
 
-    char *buf_copy = mem_get_user_buffer();
-    ssize_t result = file_read(open_file->file, buf_copy, count, pos);
+    ssize_t done_count = 0;
+    while (done_count < count) {
+        size_t inc_count = count - done_count;
+        if (inc_count > MEM_USER_BUFFER_SIZE)
+            inc_count = MEM_USER_BUFFER_SIZE;
+        if (inc_count == 0)
+            continue;
+        
+        char *buf_copy = mem_get_user_buffer();
+        ssize_t this_count = file_read(open_file->file, buf_copy, count, pos);
 
-    mem_copy_from_user_buffer(buf, count);
-    return result;
+        if (this_count < 0) {
+            if (done_count == 0)
+                done_count = -1;
+            break;
+        }
+
+        mem_copy_from_user_buffer(buf + done_count, count);
+        done_count += this_count;
+        if (this_count < inc_count)
+            break;
+    }
+
+    return done_count;
 }
 
 ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
@@ -127,9 +148,31 @@ ssize_t sys_write(int fd, uintptr_t buf, size_t count, unsigned long pos) {
     if (!open_file)
         return -1;
 
-    // TODO: Handle writes greater than MEM_USER_BUFFER_SIZE
+    // Check bounds
+    if (buf < 0x1000 || (unsigned long) buf + count >= 0xF000)
+        return -1;
 
-    char *buf_copy = mem_copy_to_user_buffer(buf, count);
+    ssize_t done_count = 0;
+    while (done_count < count) {
+        size_t inc_count = count - done_count;
+        if (inc_count > MEM_USER_BUFFER_SIZE)
+            inc_count = MEM_USER_BUFFER_SIZE;
+        if (inc_count == 0)
+            continue;
+        
+        char *buf_copy = mem_copy_to_user_buffer(buf + done_count, inc_count);
+        ssize_t this_count = file_write(open_file->file, buf_copy, inc_count, pos);
 
-    return file_write(open_file->file, buf_copy, count, pos);
+        if (this_count < 0) {
+            if (done_count == 0)
+                done_count = -1;
+            break;
+        }
+
+        done_count += this_count;
+        if (this_count < inc_count)
+            break;
+    }
+
+    return done_count;
 }
