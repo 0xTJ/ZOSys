@@ -15,6 +15,7 @@
 
 volatile p_list_t process_ready_list;
 volatile p_list_t process_zombie_list;
+volatile p_list_t process_wait_list;
 
 volatile struct process *current_proc = NULL;
 volatile pid_t next_pid = 0;
@@ -196,19 +197,36 @@ pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options) {
     struct process *found_process = NULL;
     bool child_exists = false;
 
-    do {
-        struct process *search_proc = p_list_front(&process_zombie_list);
-        while (search_proc) {
-            if (search_proc->ppid == current_pid && (pid == -1 || search_proc->pid == pid)) {
-                child_exists = true;
-                if (search_proc->state == ZOMBIE) {
-                    found_process = search_proc;
-                    break;
-                }
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+    struct process *search_proc = p_list_front(&process_zombie_list);
+
+    while (search_proc) {
+        if (search_proc->ppid == current_pid && (pid == -1 || search_proc->pid == pid)) {
+            child_exists = true;
+            if (search_proc->state == ZOMBIE) {
+                found_process = search_proc;
+                break;
             }
-            search_proc = p_list_next(search_proc);
         }
-    } while (!found_process && !nohang);
+
+        search_proc = p_list_next(search_proc);
+    }
+
+    if (!found_process && !nohang) {
+        current_proc->wait_pid = pid;
+        current_proc->wait_options = options;
+        current_proc->wait_process = NULL;
+
+        // Add to list waiting
+        current_proc->state = BLOCKED;
+        p_list_push_back(&process_wait_list, current_proc);
+        process_schedule();
+
+        found_process = current_proc->wait_process;
+    }
+
+    cpu_set_int_state(int_state);
 
     if (found_process) {
         if (wstatus)

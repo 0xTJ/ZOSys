@@ -29,6 +29,9 @@ struct process {
     pid_t pid;
     pid_t ppid;
     int status;
+    pid_t wait_pid;
+    int wait_options;
+    struct process *wait_process;
     struct open_file *open_files[MAX_OPEN_FILES];
 };
 
