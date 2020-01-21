@@ -73,10 +73,6 @@ int main(void) {
 
     kio_puts("Started ZOSYS\n");
 
-    int status = 0;
-
-    sys_waitpid(-1, (uintptr_t) &status, WNOHANG);
-
     while (1)
         ;
 }
