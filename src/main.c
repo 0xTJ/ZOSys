@@ -20,16 +20,8 @@
 
 #pragma portmode z180
 
-int fork(void);
-pid_t wait(int *wstatus);
-pid_t waitpid(pid_t pid, int *wstatus, int options);
-int open(const char *pathname, int flags);
-int close(int fd);
-ssize_t read(int fd, char *buf, size_t count);
-ssize_t write(int fd, const char *buf, size_t count);
-
+void halt(void);
 void init(void);
-void shell(void);
 
 extern uintptr_t syscall_sp;
 
@@ -63,9 +55,11 @@ int main(void) {
     kio_puts("Starting init process\n");
     pid_t pid = sys_fork();
     if(pid == 0) {
-        uintptr_t ret_addr = (uintptr_t) init;
-        dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &ret_addr, 2);
-        syscall_sp = 0xEFFE;
+        uintptr_t tmp_ptr = (uintptr_t) halt;
+        dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
+        tmp_ptr = (uintptr_t) init;
+        dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
+        syscall_sp = 0xEFFC;
         syscall_leave();
         while (1)
             ;
@@ -76,73 +70,6 @@ int main(void) {
 
     while (1)
         ;
-}
-
-int stdin_fd;
-int stdout_fd;
-int stderr_fd;
-
-void init(void) {
-    stdin_fd = open("Z:asci0", 0);
-    stdout_fd = open("Z:asci0", 0);
-    stderr_fd = open("Z:asci0", 0);
-
-    pid_t pid = fork();
-    if(pid == 0) {
-        shell();
-        // TODO: exit instead of looping
-        while (1)
-            ;
-    }
-
-    while (1) {
-        int status;
-        wait(&status);
-    }
-}
-
-void shell(void) {
-    write(stdout_fd, "In shell\n", 9);
-
-    while (1) {
-        char tmp;
-        if (read(stdin_fd, &tmp, 1) > 0) {
-            write(stdout_fd, &tmp, 1);
-        }
-    }
-}
-
-pid_t fork(void) __naked {
-    __asm__("ld a, 0\nrst 8\nret");
-}
-
-pid_t wait(int *wstatus) {
-    return waitpid(-1, wstatus, 0);
-}
-
-pid_t waitpid(pid_t pid, int *wstatus, int options) __naked {
-    __asm__("ld a, 1\nrst 8\nret");
-    (void) pid, (void) wstatus, (void) options;
-}
-
-int open(const char *pathname, int flags) __naked {
-    __asm__("ld a, 2\nrst 8\nret");
-    (void) pathname, (void) flags;
-}
-
-int close(int fd) __naked {
-    __asm__("ld a, 3\nrst 8\nret");
-    (void) fd;
-}
-
-ssize_t read(int fd, char *buf, size_t count) __naked {
-    __asm__("ld a, 4\nrst 8\nret");
-    (void) fd, (void) buf, (void) count;
-}
-
-ssize_t write(int fd, const char *buf, size_t count) __naked {
-    __asm__("ld a, 5\nrst 8\nret");
-    (void) fd, (void) buf, (void) count;
 }
 
 void trap(uintptr_t pc) {

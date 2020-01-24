@@ -1,4 +1,5 @@
 INCLUDE "config_scz180_public.inc"
+PUBLIC _halt
 EXTERN vector_table, trap
 EXTERN _main
 EXTERN asm_heap_init
@@ -112,6 +113,8 @@ SECTION code_rom_resident
     out0 (__IO_LED_OUTPUT), l
 
     ; Halt forever
+_halt:
+    di
 halt_loop:
     halt
     jr halt_loop
