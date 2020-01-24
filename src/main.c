@@ -9,14 +9,14 @@
 #include "sd.h"
 #include "ds1302.h"
 #include "context.h"
+#include <arch/scz180.h>
 #include <cpu.h>
 #include <intrinsic.h>
+#include <malloc.h>
 #include <stdint.h>
 #include <string.h>
 #include <z88dk.h>
 #include <z180.h>
-#include <malloc.h>
-#include <arch/scz180.h>
 
 #pragma portmode z180
 
@@ -164,6 +164,7 @@ void trap(uintptr_t pc) {
     if (!byte_3)
         kio_putc(')');
     kio_putc('\n');
+    // TODO: Force process termination
     while (1)
         ;
 }
