@@ -166,8 +166,11 @@ pid_t sys_fork(void) {
     unsigned long parent_addr_base = pa_from_pfn(parent_cbr);
     unsigned long child_addr_base = pa_from_pfn(child_cbr);
 
-    child_proc->ppid = parent_pid;
     child_proc->cbr = child_cbr;
+    child_proc->ppid = parent_pid;
+    for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
+        child_proc->open_files[i] = current_proc->open_files[i];
+    }
 
     dma_memcpy(child_addr_base, parent_addr_base, 0);
     // Bad things may happen if anything important on the stack changes between these lines

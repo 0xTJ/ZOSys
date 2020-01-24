@@ -25,7 +25,7 @@ int circular_buffer_put(struct circular_buffer *buffer, unsigned char value) {
     return value;
 }
 
-int circular_buffer_get(struct circular_buffer *buffer) {
+int circular_buffer_get(struct circular_buffer *buffer) __z88dk_fastcall {
     if (buffer->head == buffer->tail) {
         // Buffer empty
         return -1;
@@ -33,4 +33,21 @@ int circular_buffer_get(struct circular_buffer *buffer) {
     unsigned char value = buffer->buffer[buffer->head];
     buffer->head = circular_buffer_next_head(buffer);
     return value;
+}
+
+bool circular_buffer_is_full(struct circular_buffer *buffer) __z88dk_fastcall {
+    size_t next_tail = circular_buffer_next_tail(buffer);
+    return next_tail == buffer->head;
+}
+
+size_t circular_buffer_space_left(struct circular_buffer *buffer) __z88dk_fastcall {
+    if (buffer->head == buffer->tail) {
+        return buffer->size - 1;
+    } else if (buffer->head < buffer->tail) {
+        return buffer->size - (buffer->tail - buffer->head) - 1;
+    } else if (buffer->head > buffer->tail) {
+        return buffer->head - buffer->tail - 1;
+    } else {
+        return 0;
+    }
 }
