@@ -6,9 +6,7 @@
 
 extern struct device_char *kio_device;
 
-void kio_init(void) {
-    asci_0_init();
-}
+void kio_init(void) {}
 
 void kio_putc(char c) {
     device_char_write(kio_device, &c, 1, 0);

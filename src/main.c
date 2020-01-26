@@ -1,5 +1,6 @@
 #include "mem.h"
 #include "process.h"
+#include "asci.h"
 #include "prt.h"
 #include "device.h"
 #include "dma.h"
@@ -17,7 +18,7 @@
 #include <string.h>
 #include <z88dk.h>
 #include <z180.h>
-
+ 
 #pragma portmode z180
 
 void halt(void);
@@ -33,6 +34,7 @@ int main(void) {
         while (1)
             ;
 
+    asci_0_init();
     kio_init();
     dma_0_init();
     io_system_init();
@@ -74,7 +76,7 @@ int main(void) {
 
 void trap(uintptr_t pc) {
     bool byte_3 = ITC & __IO_ITC_UFO;
-    ITC &= 0x7F;
+    ITC &= ~__IO_ITC_TRAP;
     pc -= (byte_3 ? 2 : 1);
     kio_puts("Undefined Op Code fetch occured in PID ");
     kio_put_uc(current_proc->pid);
@@ -98,20 +100,16 @@ void trap(uintptr_t pc) {
 
 void int_0(void) {
     kio_puts("INT0\n");
-    intrinsic_ei();
 }
 
 void int_1(void) {
     kio_puts("INT1\n");
-    intrinsic_ei();
 }
 
 void int_2(void) {
     kio_puts("INT2\n");
-    intrinsic_ei();
 }
 
 void int_no_vector(void) {
     kio_puts("Unhandled Interrupt Occured\n");
-    intrinsic_ei();
 }
