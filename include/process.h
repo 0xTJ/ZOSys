@@ -46,6 +46,7 @@ extern volatile struct process *current_proc;
 
 void process_init(void);
 struct process *process_new(void);
+void process_destroy(struct process *destroy_proc);
 // Must enter with interrupts disabled
 void process_switch(struct process *next_proc) __z88dk_fastcall;
 void process_schedule(void);

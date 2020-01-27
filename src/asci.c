@@ -52,7 +52,7 @@ void asci_0_init(void) {
     intrinsic_di();
 
     CNTLA0 = __IO_CNTLA0_RE | __IO_CNTLA0_TE | __IO_CNTLA0_MODE_8N1;
-    CNTLB0 = __IO_CNTLB0_PS | __IO_CNTLB0_SS_DIV_1;
+    CNTLB0 = __IO_CNTLB0_SS_DIV_1;
     STAT0 = __IO_STAT0_RIE;
 
     cpu_set_int_state(int_state);
@@ -72,7 +72,7 @@ void asci_1_init(void) {
     intrinsic_di();
 
     CNTLA1 = __IO_CNTLA1_TE | __IO_CNTLA1_CKA1D | __IO_CNTLA1_MODE_8N1;
-    CNTLB1 = __IO_CNTLB1_PS | __IO_CNTLB1_SS_DIV_1;
+    CNTLB1 = __IO_CNTLB1_SS_DIV_1;
     STAT1 = __IO_STAT1_RIE;
 
     cpu_set_int_state(int_state);

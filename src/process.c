@@ -8,21 +8,32 @@
 #include <errno.h>
 #include <intrinsic.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "kio.h"
+
 #pragma portmode z180
 
-volatile p_list_t process_ready_list;
-volatile p_list_t process_zombie_list;
-volatile p_list_t process_wait_list;
+struct created_process {
+    p_list_t proc_list;
+    struct process proc;
+};
+
+volatile p_list_t process_list;         /* struct created_process */
+volatile p_list_t process_ready_list;   /* struct process */
+volatile p_list_t process_zombie_list;  /* struct process */
+volatile p_list_t process_wait_list;    /* struct process */
 
 volatile struct process *current_proc = NULL;
 volatile pid_t next_pid = 0;
 
 void process_init(void) {
+    p_list_init(&process_list);
     p_list_init(&process_ready_list);
     p_list_init(&process_zombie_list);
+    p_list_init(&process_wait_list);
 
     current_proc = process_new();
     current_proc->state = RUNNING;
@@ -31,17 +42,35 @@ void process_init(void) {
 
 struct process *process_new(void) {
     // Allocate new process struct
-    struct process *new_proc = malloc(sizeof(struct process));
-    if (!new_proc)
+    struct created_process *new_created_proc = malloc(sizeof(struct created_process));
+    if (!new_created_proc)
         return NULL;
 
+    struct process *new_proc = &new_created_proc->proc;
+
     // Setup process fields
-    new_proc->pid = next_pid++;
     new_proc->ppid = 0;
     new_proc->state = EMPTY;
     memset(new_proc->open_files, 0, sizeof(new_proc->open_files));
 
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    // Get new PID and assign it to new process
+    new_proc->pid = next_pid++;
+
+    // Add process to list of all existing processes
+    p_list_push_back(&process_list, new_created_proc);
+
+    cpu_set_int_state(int_state);
+
     return new_proc;
+}
+
+void process_destroy(struct process *destroy_proc) __critical {
+    struct created_process *destroy_created_proc = (struct created_process *) ((char *) destroy_proc - offsetof(struct created_process, proc));
+    p_list_remove(&process_list, destroy_created_proc);
+    free(destroy_created_proc);
 }
 
 /*
@@ -202,21 +231,40 @@ pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options) {
 
     uint8_t int_state = cpu_get_int_state();
     intrinsic_di();
-    struct process *search_proc = p_list_front(&process_zombie_list);
 
+    // Try finding matching child in process_zombie_list
+    struct process *search_proc = p_list_front(&process_zombie_list);
     while (search_proc) {
         if (search_proc->ppid == current_pid && (pid == -1 || search_proc->pid == pid)) {
             child_exists = true;
             if (search_proc->state == ZOMBIE) {
                 found_process = search_proc;
+                p_list_remove(&process_zombie_list, found_process);
                 break;
+            } else {
+                // TODO: Add panic()
+                // panic();
             }
         }
 
         search_proc = p_list_next(search_proc);
     }
+    
+    if (!child_exists) {
+        // Try finding any matching child in process_list
+        struct created_process *search_created_proc = p_list_front(&process_list);
+        while (search_created_proc) {
+            if (search_created_proc->proc.ppid == current_pid && (pid == -1 || search_created_proc->proc.pid == pid)) {
+                child_exists = true;
+                break;
+            }
 
-    if (!found_process && !nohang) {
+            search_created_proc = p_list_next(search_created_proc);
+        }
+    }
+
+    // Hang if no zombie child was found, but a matching child exists, and WNOHANG was not set
+    if (!found_process && child_exists && !nohang) {
         current_proc->wait_pid = pid;
         current_proc->wait_options = options;
         current_proc->wait_process = NULL;
@@ -234,10 +282,51 @@ pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options) {
     if (found_process) {
         if (wstatus)
             dma_memcpy(pa_from_pfn(CBR) + wstatus, pa_from_pfn(BBR) + (uintptr_t) &found_process->status, sizeof(found_process->status));
-        return found_process->pid;
+        pid_t reaped_pid = found_process->pid;
+        process_destroy(found_process);
+        return reaped_pid;
     } else if (child_exists) {
         return 0;
     } else {
         return -1;
     }
+}
+
+void sys_exit(int status) {
+    intrinsic_di();
+
+    current_proc->status = status & 0377;
+    current_proc->state = ZOMBIE;
+
+    // Make all children of this process take PPID 1
+    struct created_process *search_created_proc = p_list_front(&process_list);
+    while (search_created_proc) {
+        if (search_created_proc->proc.ppid == current_proc->pid) {
+            search_created_proc->proc.ppid = 1;
+        }
+        search_created_proc = p_list_next(search_created_proc);
+    }
+
+    // If a waiting process can reap this process, allow it to
+    struct process *search_proc = p_list_front(&process_wait_list);
+    while (search_proc) {
+        if (search_proc->pid == current_proc->ppid) {
+            // Process is the current processes's parent
+            if (search_proc->wait_pid == -1 || search_proc->wait_pid == current_proc->pid) {
+                // Process is waiting for the current process
+                search_proc->wait_process = current_proc;
+                p_list_remove(&process_wait_list, search_proc);
+                process_switch(search_proc);
+                // TODO: Add panic()
+                // panic();    // Should never return to here
+            }
+        }
+        search_proc = p_list_next(search_proc);
+    }
+
+    // Add to list of zombie processes and yield to other processes
+    p_list_push_back(&process_zombie_list, current_proc); 
+    process_schedule();
+    // TODO: Add panic()
+    // panic();    // Should never return to here
 }

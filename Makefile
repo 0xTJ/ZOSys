@@ -29,14 +29,14 @@ TARGET = zosys
 
 all: $(TARGET).bin
 
-$(TARGET).bin: $(OBJS) $(USER_OBJS) | user
+$(TARGET).bin: $(OBJS) $(USER_OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
 	dd if=/dev/zero of=$@ bs=1 count=1 seek=32767
 
-user $(USER_OBJS):
-	$(MAKE) -C $(USERDIR)
+$(USERDIR)/$(OBJDIR)/%.o: $(USERDIR)/$(SRCDIR)/%.c
+	$(MAKE) -C $(USERDIR) $(@:$(USERDIR)/%=%)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@

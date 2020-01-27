@@ -1,5 +1,7 @@
 #include "syscall.h"
+#include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/types.h>
 
 void shell(void);
@@ -22,13 +24,14 @@ void init(void) {
     }
 
     while (1) {
-        int status;
-        wait(&status);
+        int wstatus;
+        pid_t wpid = wait(&wstatus);
     }
 }
 
 void shell(void) {
-    write(stdout_fd, "In shell\n", 9);
+    const char prompt[] = "> ";
+    write(stdout_fd, prompt, strlen(prompt));
 
     while (1) {
         char tmp;
