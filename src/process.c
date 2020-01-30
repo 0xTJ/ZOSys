@@ -49,6 +49,10 @@ struct process *process_new(void) {
     struct process *new_proc = &new_created_proc->proc;
 
     // Setup process fields
+    if (next_pid > 0) {
+        // Only allocate a page block if it's not the first process
+        new_proc->cbr = mem_alloc_page_block();
+    }
     new_proc->ppid = 0;
     new_proc->state = EMPTY;
     memset(new_proc->open_files, 0, sizeof(new_proc->open_files));
@@ -68,6 +72,8 @@ struct process *process_new(void) {
 }
 
 void process_destroy(struct process *destroy_proc) __critical {
+    mem_free_page_block(destroy_proc->cbr);
+
     struct created_process *destroy_created_proc = (struct created_process *) ((char *) destroy_proc - offsetof(struct created_process, proc));
     p_list_remove(&process_list, destroy_created_proc);
     free(destroy_created_proc);
