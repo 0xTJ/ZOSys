@@ -196,12 +196,12 @@ pid_t sys_fork(void) {
     pid_t child_pid = child_proc->pid;
 
     unsigned char parent_cbr = CBR;
-    unsigned char child_cbr = mem_alloc_page_block();
+    unsigned char child_cbr = child_proc->cbr;
 
     unsigned long parent_addr_base = pa_from_pfn(parent_cbr);
     unsigned long child_addr_base = pa_from_pfn(child_cbr);
 
-    child_proc->cbr = child_cbr;
+    // Setup child fields
     child_proc->ppid = parent_pid;
     for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
         child_proc->open_files[i] = current_proc->open_files[i];
