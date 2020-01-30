@@ -86,6 +86,26 @@ int mem_alloc_page_block_specific(unsigned int page) {
     return -1;
 }
 
+void mem_free_page(unsigned char page) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    unsigned char page_block = page / PAGES_PER_BLOCK;
+    unsigned char page_in_block = page % PAGES_PER_BLOCK;
+    page_usage_map[page_block] &= ~(1U << page_in_block);
+
+    cpu_set_int_state(int_state);
+}
+
+void mem_free_page_block(unsigned char page_block) {
+    uint8_t int_state = cpu_get_int_state();
+    intrinsic_di();
+
+    page_usage_map[page_block] = 0x0000;
+
+    cpu_set_int_state(int_state);
+}
+
 char *mem_get_user_buffer(void) {
     return user_buffer;
 }
