@@ -66,9 +66,6 @@ int main(void) {
         while (1)
             ;
     }
-    kio_puts("Started init process\n");
-
-    kio_puts("Started ZOSYS\n");
 
     while (1)
         ;

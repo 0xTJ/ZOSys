@@ -19,12 +19,18 @@ struct file {
         struct device_char *dev_char;
         struct device_block *dev_block;
     };
+    size_t ref_count;
 };
 
 struct open_file {
     struct file *file;
     unsigned long pos;
 };
+
+struct file *file_file_new(void);
+void file_file_free(struct file *ptr);
+void file_file_ref(struct file *ptr);
+void file_file_unref(struct file *ptr);
 
 struct open_file *file_open_file_new(void);
 struct open_file *file_open_file_clone(struct open_file *src);

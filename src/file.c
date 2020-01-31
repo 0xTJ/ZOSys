@@ -5,9 +5,38 @@
 
 extern struct device_char *asci_0;
 
-struct file asci_0_file = {
-    FILE_CHAR_DEV
-};
+struct file *file_file_new(void) {
+    struct file *result = malloc(sizeof(struct file));
+    if (result) {
+        memset(result, 0, sizeof(result));
+        file_file_ref(result);
+    }
+    return result;
+}
+
+void file_file_free(struct file *ptr) {
+    // Safe to free NULL
+    free(ptr);
+}
+
+void file_file_ref(struct file *ptr) __critical {
+    if (ptr->ref_count == SIZE_MAX) {
+        // panic()
+        // TODO: Add panic
+    }
+    ptr->ref_count += 1;
+}
+
+void file_file_unref(struct file *ptr) __critical {
+    if (ptr->ref_count == 0) {
+        // panic()
+        // TODO: Add panic
+    }
+    ptr->ref_count -= 1;
+    if (ptr->ref_count == 0) {
+        file_file_free(ptr);
+    }
+}
 
 struct open_file *file_open_file_new(void) {
     struct open_file *result = malloc(sizeof(struct open_file));
@@ -20,6 +49,7 @@ struct open_file *file_open_file_clone(struct open_file *src) {
     if (src) {
         dest = malloc(sizeof(struct open_file));
         if (dest) {
+            file_file_ref(dest->file);
             memcpy(dest, src, sizeof(dest));
         }
     }
@@ -28,6 +58,9 @@ struct open_file *file_open_file_clone(struct open_file *src) {
 
 void file_open_file_free(struct open_file *ptr) {
     if (ptr) {
+        if (ptr->file) {
+            file_file_unref(ptr->file);
+        }
         free(ptr);
     }
 }
@@ -37,8 +70,11 @@ struct file *file_open(const char *pathname, int flags) {
     int result = -1;
 
     if (strcmp(pathname, "Z:asci0") == 0) {
-        asci_0_file.dev_char = asci_0;
-        file = &asci_0_file;
+        file = file_file_new();
+        if (file) {
+            file->type = FILE_CHAR_DEV;
+            file->dev_char = asci_0;
+        }
     }
 
     if (file) {
