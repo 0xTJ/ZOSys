@@ -42,7 +42,7 @@ struct process {
 extern volatile p_list_t process_ready_list;
 extern volatile p_list_t process_zombie_list;
 
-extern volatile struct process *current_proc;
+extern struct process * volatile current_proc;
 
 void process_init(void);
 struct process *process_new(void);
@@ -51,6 +51,8 @@ void process_destroy(struct process *destroy_proc);
 void process_switch(struct process *next_proc) __z88dk_fastcall;
 void process_schedule(void);
 void process_tick(void);
+int process_clone_files(struct process *to, struct process *from);
+
 int sys_fork(void);
 pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options);
 void syscall_leave(void);

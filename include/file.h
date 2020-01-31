@@ -26,6 +26,10 @@ struct open_file {
     unsigned long pos;
 };
 
+struct open_file *file_open_file_new(void);
+struct open_file *file_open_file_clone(struct open_file *src);
+void file_open_file_free(struct open_file *ptr);
+
 struct file *file_open(const char *pathname, int flags);
 int file_close(struct file *file);
 ssize_t file_read(struct file *file, char *buf, size_t count, unsigned long pos);

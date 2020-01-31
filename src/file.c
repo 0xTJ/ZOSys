@@ -9,6 +9,29 @@ struct file asci_0_file = {
     FILE_CHAR_DEV
 };
 
+struct open_file *file_open_file_new(void) {
+    struct open_file *result = malloc(sizeof(struct open_file));
+    memset(result, 0, sizeof(result));
+    return result;
+}
+
+struct open_file *file_open_file_clone(struct open_file *src) {
+    struct open_file *dest = NULL;
+    if (src) {
+        dest = malloc(sizeof(struct open_file));
+        if (dest) {
+            memcpy(dest, src, sizeof(dest));
+        }
+    }
+    return dest;
+}
+
+void file_open_file_free(struct open_file *ptr) {
+    if (ptr) {
+        free(ptr);
+    }
+}
+
 struct file *file_open(const char *pathname, int flags) {
     struct file *file = NULL;
     int result = -1;
@@ -79,7 +102,7 @@ int sys_open(USER_PTR(char) pathname, int flags) {
     if (found_fd == MAX_OPEN_FILES)
         return -1;
 
-    struct open_file *open_file = malloc(sizeof(struct open_file));
+    struct open_file *open_file = file_open_file_new();
     if (!open_file)
         return -1;
 

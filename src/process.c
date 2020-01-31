@@ -26,7 +26,7 @@ volatile p_list_t process_ready_list;   /* struct process */
 volatile p_list_t process_zombie_list;  /* struct process */
 volatile p_list_t process_wait_list;    /* struct process */
 
-volatile struct process *current_proc = NULL;
+struct process * volatile current_proc = NULL;
 volatile pid_t next_pid = 0;
 
 void process_init(void) {
@@ -153,6 +153,27 @@ void process_tick(void) {
     process_schedule();
 }
 
+int process_clone_files(struct process *dest, struct process *src) {
+    int result = 0;
+    for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
+        if (src->open_files[i]) {
+            dest->open_files[i] = file_open_file_clone(src->open_files[i]);
+            if (!dest->open_files[i]) {
+                // Failed to allocate open_file
+                result = -1;
+                // Free all open files that have been copied so far
+                for (size_t j = 0; j < i; ++j) {
+                    file_open_file_free(dest->open_files[j]);
+                }
+                break;
+            }
+        } else {
+            dest->open_files[i] = NULL;
+        }
+    }
+    return result;
+}
+
 uintptr_t sys_fork_helper(unsigned char child_cbr) __z88dk_fastcall __naked {
     __asm__("\
         di \n\
@@ -195,21 +216,16 @@ pid_t sys_fork(void) {
     pid_t parent_pid = current_proc->pid;
     pid_t child_pid = child_proc->pid;
 
-    unsigned char parent_cbr = CBR;
-    unsigned char child_cbr = child_proc->cbr;
-
-    unsigned long parent_addr_base = pa_from_pfn(parent_cbr);
-    unsigned long child_addr_base = pa_from_pfn(child_cbr);
-
     // Setup child fields
     child_proc->ppid = parent_pid;
-    for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
-        child_proc->open_files[i] = current_proc->open_files[i];
+    if (process_clone_files(child_proc, current_proc) != 0) {
+        process_destroy(child_proc);
+        return -1;
     }
 
-    dma_memcpy(child_addr_base, parent_addr_base, 0);
+    dma_memcpy(pa_from_pfn(child_proc->cbr), pa_from_pfn(CBR), 0);
     // Bad things may happen if anything important on the stack changes between these lines
-    child_proc->sp = sys_fork_helper(child_cbr);
+    child_proc->sp = sys_fork_helper(child_proc->cbr);
 
     if (current_proc->pid == parent_pid) {
         // Add child to ready list
@@ -299,6 +315,11 @@ pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options) {
 }
 
 void sys_exit(int status) {
+    // Close all files
+    for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
+        sys_close(i);
+    }
+
     intrinsic_di();
 
     current_proc->status = status & 0377;
