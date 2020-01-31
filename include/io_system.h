@@ -3,7 +3,7 @@
 
 #include "mutex.h"
 
-#define IO_SYSTEM_PASSIVE 0xFF
+#define IO_SYSTEM_PASSIVE 0xFD
 
 extern mutex_t io_system_mtx;
 
