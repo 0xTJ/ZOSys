@@ -10,6 +10,7 @@
 #include "sd.h"
 #include "ds1302.h"
 #include "context.h"
+#include "vfs.h"
 #include <arch/scz180.h>
 #include <cpu.h>
 #include <intrinsic.h>
@@ -18,6 +19,8 @@
 #include <string.h>
 #include <z88dk.h>
 #include <z180.h>
+
+#include "fs_dev.h"
  
 #pragma portmode z180
 
@@ -37,6 +40,7 @@ int main(void) {
     asci_0_init();
     kio_init();
     dma_0_init();
+    fs_dev_init();
     io_system_init();
     spi_init();
     sd_init();

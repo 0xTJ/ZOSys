@@ -2,8 +2,6 @@
 #include <adt.h>
 #include <stdlib.h>
 
-#include "kio.h"
-
 struct device_char *device_char_new(struct device_char_driver *driver) {
     struct device_char *new_dev = malloc(sizeof(struct device_char));
 
@@ -17,6 +15,7 @@ struct device_char *device_char_new(struct device_char_driver *driver) {
 
     return new_dev;
 }
+
 struct device_block *device_block_new(struct device_block_driver *driver, unsigned int block_size) {
     struct device_block *new_dev = malloc(sizeof(struct device_block));
 

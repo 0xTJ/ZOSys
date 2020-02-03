@@ -1,9 +1,8 @@
 #include "file.h"
 #include "process.h"
+#include "vfs.h"
 #include <stdlib.h>
 #include <string.h>
-
-extern struct device_char *asci_0;
 
 struct file *file_file_new(void) {
     struct file *result = malloc(sizeof(struct file));
@@ -66,15 +65,14 @@ void file_open_file_free(struct open_file *ptr) {
 }
 
 struct file *file_open(const char *pathname, int flags) {
+    struct filesystem *fs = NULL;
     struct file *file = NULL;
     int result = -1;
 
-    if (strcmp(pathname, "Z:asci0") == 0) {
-        file = file_file_new();
-        if (file) {
-            file->type = FILE_CHAR_DEV;
-            file->dev_char = asci_0;
-        }
+    fs = vfs_get_fs(pathname);
+
+    if (fs) {
+        file = fs->get_file(fs, pathname + 2);
     }
 
     if (file) {
