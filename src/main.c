@@ -7,8 +7,8 @@
 #include "kio.h"
 #include "io_system.h"
 #include "spi.h"
-#include "sd.h"
 #include "ds1302.h"
+#include "module.h"
 #include "context.h"
 #include "vfs.h"
 #include <arch/scz180.h>
@@ -19,8 +19,6 @@
 #include <string.h>
 #include <z88dk.h>
 #include <z180.h>
-
-#include "fs_dev.h"
  
 #pragma portmode z180
 
@@ -28,6 +26,9 @@ void halt(void);
 void init(void);
 
 extern uintptr_t syscall_sp;
+
+extern struct module fs_dev_module;
+extern struct module sd_module;
 
 int main(void) {
     CMR = __IO_CMR_X2;
@@ -40,10 +41,10 @@ int main(void) {
     asci_0_init();
     kio_init();
     dma_0_init();
-    fs_dev_init();
+    module_init(&fs_dev_module);
     io_system_init();
     spi_init();
-    sd_init();
+    module_init(&sd_module);
 
     // Create process information structures
     kio_puts("Initializing processes\n");
@@ -61,6 +62,7 @@ int main(void) {
     kio_puts("Starting init process\n");
     pid_t pid = sys_fork();
     if(pid == 0) {
+        // Manually setup the user-space stack
         uintptr_t tmp_ptr = (uintptr_t) halt;
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
         tmp_ptr = (uintptr_t) init;

@@ -1,4 +1,4 @@
-#include "sd.h"
+#include "module.h"
 #include "device.h"
 #include "spi.h"
 #include <cpu.h>
@@ -39,6 +39,14 @@
 #define CMD24                   24
 #define CMD24_CRC               0x00
 #define SD_MAX_WRITE_ATTEMPTS   3907
+
+int sd_init(void);
+void sd_exit(void);
+
+struct module sd_module = {
+    sd_init,
+    sd_exit
+};
 
 struct device_block_driver sd_driver = {
     dummy_block_open,
@@ -358,6 +366,11 @@ int sd_init(void) {
         return -1;
 
     return 0;
+}
+
+void sd_exit(void) {
+    // TODO: Clean up
+    return;
 }
 
 ssize_t sd_read(struct device_block *dev, char *buf, unsigned int block_count, unsigned long pos) {

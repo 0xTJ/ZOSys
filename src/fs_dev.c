@@ -1,11 +1,18 @@
-#include "fs_dev.h"
+#include "module.h"
+#include "file.h"
+#include "vfs.h"
 #include <string.h>
-
-#include "asci.h"
 
 extern struct device_char *asci_0;
 
+int fs_dev_init(void);
+void fs_dev_exit(void);
 struct file *fs_dev_get_file(struct filesystem *, const char *);
+
+struct module fs_dev_module = {
+    fs_dev_init,
+    fs_dev_exit
+};
 
 struct filesystem fs_dev = {
     fs_dev_get_file
@@ -13,6 +20,11 @@ struct filesystem fs_dev = {
 
 int fs_dev_init(void) {
     return vfs_mount(&fs_dev, 'Z');
+}
+
+void fs_dev_exit(void) {
+    // TODO: Clean up
+    return;
 }
 
 struct file *fs_dev_get_file(struct filesystem *fs, const char *pathname) {
