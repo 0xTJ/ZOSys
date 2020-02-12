@@ -1,4 +1,5 @@
-#include "asci.h"
+#include "device.h"
+#include "module.h"
 #include "circular_buffer.h"
 #include <cpu.h>
 #include <intrinsic.h>
@@ -12,6 +13,17 @@
 #define ASCI0_TX_BUF_SIZE 32
 #define ASCI1_RX_BUF_SIZE 32
 #define ASCI1_TX_BUF_SIZE 32
+
+int dev_asci_init(void);
+void dev_asci_exit(void);
+
+void asci_0_init(void);
+void asci_1_init(void);
+
+struct module dev_asci_module = {
+    dev_asci_init,
+    dev_asci_exit
+};
 
 struct device_char_driver asci_driver = {
     dummy_char_open,
@@ -46,6 +58,16 @@ struct circular_buffer asci1_tx_circ_buf = {
     asci1_tx_buf,
     sizeof(asci1_tx_buf)
 };
+
+int dev_asci_init(void) {
+    asci_0_init();
+    asci_1_init();
+    return 0;
+}
+
+void dev_asci_exit(void) {
+    return;
+}
 
 void asci_0_init(void) {
     uint8_t int_state = cpu_get_int_state();

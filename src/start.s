@@ -47,9 +47,8 @@ ENDIF
     out0 (CBAR), a
 
     ; Map Bank Area at 0x1000 to 0x01000
-    ; Is redundant
-    ; ld a, #(0x01000 - 0x1000) >> 12
-    ; out0 (BBR), a
+    ld a, #(0x01000 - 0x1000) >> 12
+    out0 (BBR), a
 
     ; Map Common Area 1 at 0x8000 to 0x81000
     ld a, [0x81000 - 0x8000] >> 12

@@ -1,6 +1,5 @@
 #include "mem.h"
 #include "process.h"
-#include "asci.h"
 #include "prt.h"
 #include "device.h"
 #include "dma.h"
@@ -22,11 +21,11 @@
  
 #pragma portmode z180
 
-void halt(void);
 void init(void);
 
 extern uintptr_t syscall_sp;
 
+extern struct module dev_asci_module;
 extern struct module fs_dev_module;
 extern struct module sd_module;
 
@@ -38,8 +37,7 @@ int main(void) {
         while (1)
             ;
 
-    asci_0_init();
-    kio_init();
+    module_init(&dev_asci_module);
     dma_0_init();
     module_init(&fs_dev_module);
     io_system_init();
@@ -63,7 +61,7 @@ int main(void) {
     pid_t pid = sys_fork();
     if(pid == 0) {
         // Manually setup the user-space stack
-        uintptr_t tmp_ptr = (uintptr_t) halt;
+        uintptr_t tmp_ptr = 0x0000; // Returning from init is currently an error, reset system
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
         tmp_ptr = (uintptr_t) init;
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
@@ -73,8 +71,13 @@ int main(void) {
             ;
     }
 
-    while (1)
-        ;
+    while (sys_waitpid(1, 0, WNOHANG) <= 0) {
+        // Loop while process 1 exists as a child of process 0
+    }
+
+    kio_puts("System is halting\n");
+
+    return 0;
 }
 
 void trap(uintptr_t pc) {

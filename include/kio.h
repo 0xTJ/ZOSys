@@ -1,7 +1,6 @@
 #ifndef INCLUDE_KIO_H
 #define INCLUDE_KIO_H
 
-void kio_init(void);
 void kio_putc(char c);
 void kio_puts(char *s);
 void kio_put_uc(unsigned char n);
