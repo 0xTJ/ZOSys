@@ -1,5 +1,6 @@
 PUBLIC _init
 
-SECTION data_compiler
+SECTION code_compiler
+
 _init:
-BINARY "user/user.bin"
+    BINARY "init/init.bin"

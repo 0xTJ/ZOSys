@@ -5,7 +5,7 @@ ARCH = +scz180 -subtype=none
 SRCDIR = src
 DEPDIR = dep
 OBJDIR = obj
-USERDIR = user
+INITDIR = init
 
 SRCS_C = $(wildcard $(SRCDIR)/*.c)
 SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)/*.s))
@@ -20,9 +20,9 @@ LDLIBS += -lm
 
 TARGET = zosys
 
-.PHONY: all clean
+.PHONY: all clean init
 
-all: $(TARGET).bin
+all: init $(TARGET).bin
 
 $(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
@@ -30,11 +30,11 @@ $(TARGET).bin: $(OBJS)
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
 	dd if=/dev/zero of=$@ bs=1 count=1 seek=32767
 
-$(OBJDIR)/init.o: $(SRCDIR)/init.s | $(USERDIR)/user.bin
+$(OBJDIR)/init.o: $(SRCDIR)/init.s $(INITDIR)/init.bin
 	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
 
-$(USERDIR)/user.bin:
-	$(MAKE) -C $(USERDIR) user.bin
+init:
+	$(MAKE) -C $(INITDIR)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
@@ -51,4 +51,4 @@ include $(wildcard $(DEPS))
 
 clean:
 	$(RM) *.bin *.def $(DEPDIR)/* $(OBJDIR)/*
-	$(MAKE) -C $(USERDIR) clean
+	$(MAKE) -C $(INITDIR) clean
