@@ -8,10 +8,7 @@ void mutex_init(mutex_t *mtx) {
     mtx->locked = false;
 }
 
-void mutex_lock(mutex_t *mtx) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+void mutex_lock(mutex_t *mtx) __critical {
     while (mtx->locked) {
         current_proc->state = BLOCKED;
         p_list_push_back(&mtx->blocked_list, current_proc);
@@ -19,29 +16,19 @@ void mutex_lock(mutex_t *mtx) {
     }
 
     mtx->locked = true;
-    
-    cpu_set_int_state(int_state);
 }
 
-bool mutex_trylock(mutex_t *mtx) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+bool mutex_trylock(mutex_t *mtx) __critical {
     if (mtx->locked) {
-        cpu_set_int_state(int_state);
         return false;
     }
 
     mtx->locked = true;
-    
-    cpu_set_int_state(int_state);
+
     return true;
 }
 
-void mutex_unlock(mutex_t *mtx) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+void mutex_unlock(mutex_t *mtx) __critical {
     mtx->locked = false;
 
     struct process *unlocked_process = p_list_pop_front(&mtx->blocked_list);
@@ -49,6 +36,4 @@ void mutex_unlock(mutex_t *mtx) {
         unlocked_process->state = READY;
         p_list_push_back(&process_ready_list, unlocked_process);
     }
-    
-    cpu_set_int_state(int_state);
 }

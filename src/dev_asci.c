@@ -109,61 +109,41 @@ void asci_1_init(void) {
     mutex_unlock(&asci_1->mtx);
 }
 
-int asci_0_putc(char c) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int asci_0_putc(char c) __critical {
     if (circular_buffer_put(&asci0_tx_circ_buf, c) < 1) {
-        cpu_set_int_state(int_state);
         return -1;
     }
 
     STAT0 |= __IO_STAT0_TIE;
 
-    cpu_set_int_state(int_state);
     return (unsigned char) c;
 }
 
-int asci_0_getc(void) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int asci_0_getc(void) __critical {
     int c;
     if ((c = circular_buffer_get(&asci0_rx_circ_buf)) < 1) {
-        cpu_set_int_state(int_state);
         return -1;
     }
 
-    cpu_set_int_state(int_state);
     return (unsigned char) c;
 }
 
-int asci_1_putc(char c) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int asci_1_putc(char c) __critical {
     if (circular_buffer_put(&asci1_tx_circ_buf, c) < 1) {
-        cpu_set_int_state(int_state);
         return -1;
     }
 
     STAT1 |= __IO_STAT1_TIE;
 
-    cpu_set_int_state(int_state);
     return (unsigned char) c;
 }
 
-int asci_1_getc(void) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int asci_1_getc(void) __critical {
     int c;
     if ((c = circular_buffer_get(&asci1_rx_circ_buf)) < 1) {
-        cpu_set_int_state(int_state);
         return -1;
     }
 
-    cpu_set_int_state(int_state);
     return (unsigned char) c;
 }
 

@@ -37,18 +37,12 @@ int prt_stop_1(void) {
     return 0;
 }
 
-void prt_interrupt_routine_0(void (*interrupt_routine)(void)) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
+void prt_interrupt_routine_0(void (*interrupt_routine)(void)) __critical {
     interrupt_routine_0 = interrupt_routine;
-    cpu_set_int_state(int_state);
 }
 
-void prt_interrupt_routine_1(void (*interrupt_routine)(void)) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
+void prt_interrupt_routine_1(void (*interrupt_routine)(void)) __critical {
     interrupt_routine_1 = interrupt_routine;
-    cpu_set_int_state(int_state);
 }
 
 void int_prt0(void) {
