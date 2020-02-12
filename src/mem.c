@@ -15,10 +15,7 @@ uint16_t page_usage_map[PAGE_BLOCK_COUNT] = {
         0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     };
 
-int mem_alloc_page(void) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int mem_alloc_page(void) __critical {
     // First try to grab from partially used page block
     for (unsigned char page_block = 0; page_block < PAGE_BLOCK_COUNT; ++page_block) {
         if (page_usage_map[page_block] != 0xFFFF && page_usage_map[page_block] != 0x0000) {
@@ -26,7 +23,6 @@ int mem_alloc_page(void) {
             for (unsigned char page_in_block = 0; page_in_block < PAGES_PER_BLOCK; ++page_in_block) {
                 if (!(page_usage_map[page_block] & (1U << page_in_block))) {
                     page_usage_map[page_block] |= 1U << page_in_block;
-                    cpu_set_int_state(int_state);
                     return page_block * PAGE_COUNT + page_in_block;
                 }
             }
@@ -39,71 +35,50 @@ int mem_alloc_page(void) {
             // Empty page block, use it
             unsigned char page_in_block = 0;
             page_usage_map[page_block] |= 1U << page_in_block;
-            cpu_set_int_state(int_state);
             return page_block * PAGE_COUNT + page_in_block;
         }
     }
 
-    cpu_set_int_state(int_state);
     return -1;
 }
 
-int mem_alloc_page_block(void) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int mem_alloc_page_block(void) __critical {
     for (unsigned char page_block = 0; page_block < PAGE_BLOCK_COUNT; ++page_block) {
         if (page_usage_map[page_block] == 0x0000) {
             // Empty page block, use it
             page_usage_map[page_block] = 0xFFFF;
-            cpu_set_int_state(int_state);
             unsigned int page = page_block * PAGES_PER_BLOCK;
             return page;
         }
     }
 
-    cpu_set_int_state(int_state);
     return -1;
 }
 
-int mem_alloc_page_block_specific(unsigned int page) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+int mem_alloc_page_block_specific(unsigned int page) __critical {
     if (page % PAGES_PER_BLOCK == 0) {
         unsigned int page_block = page / PAGES_PER_BLOCK;
         if (page_block < PAGE_BLOCK_COUNT) {
             if (page_usage_map[page_block] == 0x0000) {
                 // Empty page block, use it
                 page_usage_map[page_block] = 0xFFFF;
-                cpu_set_int_state(int_state);
                 return page;
             }
         }
     }
 
-    cpu_set_int_state(int_state);
     return -1;
 }
 
-void mem_free_page(unsigned char page) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+void mem_free_page(unsigned char page) __critical {
     unsigned char page_block = page / PAGES_PER_BLOCK;
     unsigned char page_in_block = page % PAGES_PER_BLOCK;
     page_usage_map[page_block] &= ~(1U << page_in_block);
-
-    cpu_set_int_state(int_state);
 }
 
-void mem_free_page_block(unsigned char page_block) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+void mem_free_page_block(unsigned char page) __critical {
+    unsigned char page_block = page / PAGES_PER_BLOCK;
     page_usage_map[page_block] = 0x0000;
-
-    cpu_set_int_state(int_state);
 }
 
 char *mem_get_user_buffer(void) {

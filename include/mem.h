@@ -22,7 +22,7 @@ int mem_alloc_page(void);
 int mem_alloc_page_block(void);
 int mem_alloc_page_block_specific(unsigned int page);
 void mem_free_page(unsigned char page);
-void mem_free_page_block(unsigned char page_block);
+void mem_free_page_block(unsigned char page);
 
 char *mem_get_user_buffer(void);
 char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count);

@@ -17,9 +17,14 @@ CFLAGS += --list -SO3 -clib=sdcc_iy --math32_z180 #--max-allocs-per-node200000
 LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy --math32_z180
 LDLIBS += -lm
 
+TARGET = user
+
 .PHONY: all clean
 
-all: $(OBJS)
+all: $(TARGET).bin
+
+$(TARGET).bin: $(OBJS)
+	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@

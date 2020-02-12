@@ -73,7 +73,6 @@ struct process *process_new(void) {
 
 void process_destroy(struct process *destroy_proc) __critical {
     mem_free_page_block(destroy_proc->cbr);
-
     struct created_process *destroy_created_proc = (struct created_process *) ((char *) destroy_proc - offsetof(struct created_process, proc));
     p_list_remove(&process_list, destroy_created_proc);
     free(destroy_created_proc);

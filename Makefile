@@ -12,11 +12,6 @@ SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)
 DEPS := $(SRCS_C:$(SRCDIR)/%.c=$(DEPDIR)/%.d)
 OBJS = $(SRCS_ASM:$(SRCDIR)/%.s=$(OBJDIR)/%.o) $(SRCS_C:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
-USER_SRCS_C = $(wildcard $(USERDIR)/$(SRCDIR)/*.c)
-USER_SRCS_ASM = $(wildcard $(USERDIR)/$(SRCDIR)/*.s)
-USER_DEPS := $(USER_SRCS_C:$(USERDIR)/$(SRCDIR)/%.c=$(USERDIR)/$(DEPDIR)/%.d)
-USER_OBJS = $(USER_SRCS_ASM:$(USERDIR)/$(SRCDIR)/%.s=$(USERDIR)/$(OBJDIR)/%.o) $(USER_SRCS_C:$(USERDIR)/$(SRCDIR)/%.c=$(USERDIR)/$(OBJDIR)/%.o)
-
 DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
 CPPFLAGS += $(DEPFLAGS) -Iinclude
 CFLAGS += --list -SO3 -clib=sdcc_iy --math32_z180 #--max-allocs-per-node200000
@@ -25,18 +20,21 @@ LDLIBS += -lm
 
 TARGET = zosys
 
-.PHONY: all clean user
+.PHONY: all clean
 
 all: $(TARGET).bin
 
-$(TARGET).bin: $(OBJS) $(USER_OBJS)
+$(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
 	dd if=/dev/zero of=$@ bs=1 count=1 seek=32767
 
-$(USERDIR)/$(OBJDIR)/%.o: $(USERDIR)/$(SRCDIR)/%.c
-	$(MAKE) -C $(USERDIR) $(@:$(USERDIR)/%=%)
+$(OBJDIR)/init.o: $(SRCDIR)/init.s | $(USERDIR)/user.bin
+	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
+
+$(USERDIR)/user.bin:
+	$(MAKE) -C $(USERDIR) user.bin
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@

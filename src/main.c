@@ -21,7 +21,7 @@
  
 #pragma portmode z180
 
-void init(void);
+extern char init[1024];
 
 extern uintptr_t syscall_sp;
 
@@ -63,8 +63,9 @@ int main(void) {
         // Manually setup the user-space stack
         uintptr_t tmp_ptr = 0x0000; // Returning from init is currently an error, reset system
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
-        tmp_ptr = (uintptr_t) init;
+        tmp_ptr = 0x1000;
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
+        dma_memcpy(pa_from_pfn(CBR) + 0x1000, pa_from_pfn(BBR) + (uintptr_t) init, sizeof(init));
         syscall_sp = 0xEFFC;
         syscall_leave();
         while (1)
