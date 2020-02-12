@@ -26,9 +26,9 @@ all: init $(TARGET).bin
 
 $(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	dd if=/dev/zero of=$@ bs=1 count=32768
 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
-	dd if=/dev/zero of=$@ bs=1 count=1 seek=32767
 
 $(OBJDIR)/init.o: $(SRCDIR)/init.s $(INITDIR)/init.bin
 	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
