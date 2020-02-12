@@ -5,3 +5,5 @@
 zcc_opt.def
 obj
 dep
+.vscode
+
