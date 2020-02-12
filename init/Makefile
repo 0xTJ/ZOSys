@@ -29,7 +29,7 @@ $(TARGET).bin: $(OBJS)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.s
+$(OBJDIR)/%.o: $(SRCDIR)/%.s | $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR): ; @mkdir -p $@
