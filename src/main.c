@@ -21,7 +21,7 @@
  
 #pragma portmode z180
 
-extern char init[1024];
+extern char init[0xE000];
 
 extern uintptr_t syscall_sp;
 
