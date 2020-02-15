@@ -10,7 +10,7 @@ typedef struct {
     signed int count;
 } semaphore_t;
 
-void semaphore_init(semaphore_t *smphr);
+void semaphore_init(semaphore_t *smphr, signed int initial_value);
 void semaphore_lock(semaphore_t *smphr);
 bool semaphore_trylock(semaphore_t *smphr);
 void semaphore_unlock(semaphore_t *smphr);

@@ -2,9 +2,9 @@
 #include <cpu.h>
 #include <intrinsic.h>
 
-void semaphore_init(semaphore_t *smphr) {
+void semaphore_init(semaphore_t *smphr, signed int initial_value) {
     p_list_init(&smphr->blocked_list);
-    smphr->count = 1;
+    smphr->count = initial_value;
 }
 
 void semaphore_wait(semaphore_t *smphr) __critical {
