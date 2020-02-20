@@ -44,7 +44,7 @@ SECTION code_rom_resident
 
 ; Only to be done with interrupts disabled, while in kernel space
 ; void context_init(void (*pc)());
-PUBLIC _context_init
+; PUBLIC _context_init
 _context_init:
     ; Copy pc argument to DE
     pop hl
@@ -154,6 +154,8 @@ interupt_leave:
 
 PUBLIC trap
 trap:
+    in0 a, (CBAR)
+    ld (_trap_cbar), a
     ld a, 0xF1
     out0 (CBAR), a
     call _trap
@@ -248,6 +250,10 @@ int_no_vector:
     
 
 SECTION user_tmp
+
+PUBLIC _trap_cbar
+_trap_cbar:
+    DEFB 0
 
 interrupt_sp:
     DEFW 0

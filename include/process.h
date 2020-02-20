@@ -18,7 +18,6 @@ enum proc_state {
     ZOMBIE
 };
 
-#define PROC_STATE_READY_STR "1"
 #define PROC_STATE_RUNNING_STR "2"
 
 struct process {
@@ -49,12 +48,15 @@ struct process *process_new(void);
 void process_destroy(struct process *destroy_proc);
 // Must enter with interrupts disabled
 void process_switch(struct process *next_proc) __z88dk_fastcall;
+// Must enter with interrupts disabled
 void process_schedule(void);
 void process_tick(void);
 int process_clone_files(struct process *to, struct process *from);
 
 int sys_fork(void);
 pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options);
+void sys_exit(int status);
+
 void syscall_leave(void);
 
 #endif

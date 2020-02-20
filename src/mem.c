@@ -86,8 +86,11 @@ char *mem_get_user_buffer(void) {
 }
 
 char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count) {
-    if (count > sizeof(user_buffer))
+    if (count > sizeof(user_buffer)) {
+        // panic();
+        // TODO: Add panic() and use instead of the following
         count = sizeof(user_buffer);
+    }
 
     uint32_t user_addr_base = pa_from_pfn(CBR);
     uint32_t user_buffer_addr = user_addr_base + (uintptr_t) user_buffer;
@@ -99,8 +102,11 @@ char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count) {
 }
 
 char *mem_copy_from_user_buffer(uintptr_t user_ptr, size_t count) {
-    if (count > sizeof(user_buffer))
+    if (count > sizeof(user_buffer)) {
+        // panic();
+        // TODO: Add panic() and use instead of the following
         count = sizeof(user_buffer);
+    }
 
     uint32_t user_addr_base = pa_from_pfn(CBR);
     uint32_t user_buffer_addr = user_addr_base + (uintptr_t) user_buffer;

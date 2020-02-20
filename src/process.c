@@ -36,6 +36,10 @@ void process_init(void) {
     p_list_init(&process_wait_list);
 
     current_proc = process_new();
+    if (!current_proc) {
+        // panic();
+        // TODO: Add panic()
+    }
     current_proc->state = RUNNING;
     current_proc->cbr = CBR;
 }

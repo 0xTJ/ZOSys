@@ -9,6 +9,7 @@
 #define MAX_OPEN_FILES 8
 
 enum file_type {
+    FILE_PLAIN,
     FILE_CHAR_DEV,
     FILE_BLOCK_DEV
 };

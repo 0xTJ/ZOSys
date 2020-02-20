@@ -25,6 +25,8 @@ extern char init[0xE000];
 
 extern uintptr_t syscall_sp;
 
+extern unsigned char trap_cbar;
+
 extern struct module dev_asci_module;
 extern struct module fs_dev_module;
 extern struct module sd_module;
@@ -85,25 +87,44 @@ int main(void) {
 void trap(uintptr_t pc) {
     bool byte_3 = ITC & __IO_ITC_UFO;
     ITC &= ~__IO_ITC_TRAP;
-    pc -= (byte_3 ? 2 : 1);
-    kio_puts("Undefined Op Code fetch occured in PID ");
+    uintptr_t op_pc = pc - (byte_3 ? 2 : 1);
+    bool in_kernel = false;
+    if (trap_cbar == 0xF1) {
+        // Kernel space
+        in_kernel = true;
+    }
+    kio_puts("Undefined Op Code fetch caused by ");
+    kio_puts(in_kernel ? "kernel" : "user");
+    kio_puts(" in PID ");
     kio_put_uc(current_proc->pid);
     kio_puts(" at address ");
-    kio_put_ui(pc);
+    kio_put_ui(op_pc);
     kio_puts(": ");
-    kio_put_uc(cpu_bpeek(pc));
+    kio_put_uc(cpu_bpeek(op_pc));
     kio_putc(' ');
-    kio_put_uc(cpu_bpeek(pc + 1));
+    if (!byte_3)
+        kio_putc('*');
+    kio_put_uc(cpu_bpeek(op_pc + 1));
+    if (!byte_3)
+        kio_putc('*');
     kio_putc(' ');
     if (!byte_3)
         kio_putc('(');
-    kio_put_uc(cpu_bpeek(pc + 2));
+    else
+        kio_putc('*');
+    kio_put_uc(cpu_bpeek(op_pc + 2));
     if (!byte_3)
         kio_putc(')');
+    else
+        kio_putc('*');
     kio_putc('\n');
-    // TODO: Force process termination
-    while (1)
-        ;
+    if (in_kernel) {
+        // panic();
+        // TODO: Add panic()
+    } else {
+        // TODO: Set the value here correctly
+        sys_exit(129);
+    }
 }
 
 void int_0(void) {

@@ -145,7 +145,7 @@ int sys_open(USER_PTR(char) pathname, int flags) {
 
     open_file->file = file_open(pathname_copied, flags);
     if (!open_file->file) {
-        free(open_file);
+        file_open_file_free(open_file);
         return -1;
     }
 
@@ -159,7 +159,7 @@ int sys_close(int fd) {
     if (!open_file)
         return -1;
     file_close(open_file->file);
-    free(open_file);
+    file_open_file_free(open_file);
     current_proc->open_files[fd] = NULL;
     return 0;
 }
