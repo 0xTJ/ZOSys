@@ -3,40 +3,55 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-struct filesystem * volatile filesystems['Z' - 'A' + 1] = {0};
+volatile struct mountpoint mountpoints['Z' - 'A' + 1] = {{0}};
 
-int vfs_mount(struct filesystem *fs, char mountpoint) __critical {
-    if (!isalpha(mountpoint))
+int vfs_mount(struct filesystem *fs, struct file *backing, char mountdrive) __critical {
+    if (!isalpha(mountdrive))
         return -1;
 
-    if (islower(mountpoint))
-        mountpoint = toupper(mountpoint);
-    uint8_t fs_num = mountpoint - 'A';
+    if (islower(mountdrive))
+        mountdrive = toupper(mountdrive);
+    uint8_t fs_num = mountdrive - 'A';
 
-    if (filesystems[fs_num])
+    if (mountpoints[fs_num].fs)
         return -1;
-    filesystems[fs_num] = fs;
 
-    return mountpoint;
+    if (backing) {
+        file_file_ref(backing);
+    }
+
+    mountpoints[fs_num].fs = fs;
+    mountpoints[fs_num].backing = backing;
+
+    return mountdrive;
 }
 
-void vfs_unmount(char mountpoint) __critical {
-    if (!isalpha(mountpoint))
+void vfs_unmount(char mountdrive) __critical {
+    if (!isalpha(mountdrive))
         return;
 
-    if (islower(mountpoint))
-        mountpoint = toupper(mountpoint);
-    uint8_t fs_num = mountpoint - 'A';
+    if (islower(mountdrive))
+        mountdrive = toupper(mountdrive);
+    uint8_t fs_num = mountdrive - 'A';
 
-    filesystems[fs_num] = NULL;
+    if (mountpoints[fs_num].backing) {
+        file_file_unref(mountpoints[fs_num].backing);
+    }
+
+    mountpoints[fs_num].fs = NULL;
+    mountpoints[fs_num].backing = NULL;
 }
 
-struct filesystem *vfs_get_fs(const char *pathname) __critical {
+struct mountpoint *vfs_get_mount(const char *pathname) __critical {
     if (pathname[0] == '\0' || !isalpha(pathname[0]) || pathname[1] != ':')
         return NULL;
 
     char fs_letter = islower(pathname[0]) ? toupper(pathname[0]) : pathname[0];
     uint8_t fs_num = fs_letter - 'A';
 
-    return filesystems[fs_num];
+    if (mountpoints[fs_num].fs) {
+        return &mountpoints[fs_num];
+    } else {
+        return NULL;
+    }
 }

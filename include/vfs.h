@@ -2,13 +2,20 @@
 #define INCLUDE_VFS_H
 
 #include "file.h"
+#include "device.h"
 
-struct filesystem {
-    struct file *(*get_file)(struct filesystem *, const char *);
+struct mountpoint {
+    struct filesystem *fs;
+    struct file *backing;
 };
 
-int vfs_mount(struct filesystem *fs, char mountpoint);
+struct filesystem {
+    struct file *(*get_file)(struct mountpoint *, const char *);
+    struct file_ops *ops;
+};
+
+int vfs_mount(struct filesystem *fs, struct file *backing, char mountpoint);
 void vfs_unmount(char mountpoint);
-struct filesystem *vfs_get_fs(const char *pathname);
+struct mountpoint *vfs_get_mount(const char *pathname);
 
 #endif

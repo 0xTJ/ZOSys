@@ -5,7 +5,7 @@
 
 int fs_dev_init(void);
 void fs_dev_exit(void);
-struct file *fs_dev_get_file(struct filesystem *, const char *);
+struct file *fs_dev_get_file(struct mountpoint *, const char *);
 
 struct module fs_dev_module = {
     fs_dev_init,
@@ -13,11 +13,12 @@ struct module fs_dev_module = {
 };
 
 struct filesystem fs_dev = {
-    fs_dev_get_file
+    fs_dev_get_file,
+    NULL
 };
 
 int fs_dev_init(void) {
-    return vfs_mount(&fs_dev, 'Z');
+    return vfs_mount(&fs_dev, NULL, 'Z');
 }
 
 void fs_dev_exit(void) {
@@ -25,15 +26,15 @@ void fs_dev_exit(void) {
     return;
 }
 
-struct file *fs_dev_get_file(struct filesystem *fs, const char *pathname) {
-    struct file *file = NULL;
+struct file *fs_dev_get_file(struct mountpoint *mp, const char *pathname) {
+    (void) mp;
+
+    struct file *file_ptr = NULL;
     if (strcmp(pathname, "asci0") == 0) {
-        file = file_file_new();
-        if (file) {
-            file->type = FILE_SPECIAL;
-            file->special.major = 1;
-            file->special.minor = 0;
+        file_ptr = file_file_new();
+        if (file_ptr) {
+            file_init_special(file_ptr, 1, 0);
         }
     }
-    return file;
+    return file_ptr;
 }

@@ -38,6 +38,18 @@ void file_file_unref(struct file *ptr) __critical {
     }
 }
 
+void file_init_plain(struct file *file_ptr, struct mountpoint *mp, ino_t inode) {
+    file_ptr->type = FILE_PLAIN;
+    file_ptr->plain.mp = mp;
+    file_ptr->plain.inode = inode;
+}
+
+void file_init_special(struct file *file_ptr, int major, int minor) {
+    file_ptr->type = FILE_SPECIAL;
+    file_ptr->special.major = major;
+    file_ptr->special.minor = minor;
+}
+
 struct open_file *file_open_file_new(void) {
     struct open_file *result = malloc(sizeof(struct open_file));
     memset(result, 0, sizeof(result));
@@ -66,18 +78,25 @@ void file_open_file_free(struct open_file *ptr) {
 }
 
 struct file *file_open(const char *pathname, int flags) {
-    struct filesystem *fs = NULL;
+    struct mountpoint *mp = NULL;
     struct file *file_ptr = NULL;
     int result = -1;
 
-    fs = vfs_get_fs(pathname);
+    mp = vfs_get_mount(pathname);
 
-    if (fs) {
-        file_ptr = fs->get_file(fs, pathname + 2);
+    if (mp) {
+        file_ptr = mp->fs->get_file(mp, pathname + 2);
     }
 
     if (file_ptr) {
         switch (file_ptr->type) {
+        case FILE_PLAIN:
+            if (mp->fs->ops && mp->fs->ops->open) {
+                result = mp->fs->ops->open(file_ptr, flags);
+            } else {
+                result = 0; 
+            }
+            break;
         case FILE_SPECIAL:
             result = device_open(file_ptr, flags);
             break;
@@ -97,6 +116,12 @@ struct file *file_open(const char *pathname, int flags) {
 
 int file_close(struct file *file_ptr) {
     switch (file_ptr->type) {
+    case FILE_PLAIN:
+        if (file_ptr->plain.mp->fs->ops && file_ptr->plain.mp->fs->ops->close) {
+            return file_ptr->plain.mp->fs->ops->close(file_ptr);
+        } else {
+            return 0; 
+        }
     case FILE_SPECIAL:
         return device_close(file_ptr);
     default:
@@ -108,6 +133,12 @@ int file_close(struct file *file_ptr) {
 
 ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
     switch (file_ptr->type) {
+    case FILE_PLAIN:
+        if (file_ptr->plain.mp->fs->ops && file_ptr->plain.mp->fs->ops->read) {
+            return file_ptr->plain.mp->fs->ops->read(file_ptr, buf, count, pos);
+        } else {
+            return -1; 
+        }
     case FILE_SPECIAL:
         return device_read(file_ptr, buf, count, pos);
     default:
@@ -119,6 +150,12 @@ ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long 
 
 ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
     switch (file_ptr->type) {
+    case FILE_PLAIN:
+        if (file_ptr->plain.mp->fs->ops && file_ptr->plain.mp->fs->ops->write) {
+            return file_ptr->plain.mp->fs->ops->write(file_ptr, buf, count, pos);
+        } else {
+            return 0; 
+        }
     case FILE_SPECIAL:
         return device_write(file_ptr, buf, count, pos);
     default:
@@ -170,7 +207,7 @@ ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count) {
         return -1;
 
     // Check bounds
-    if (buf < 0x1000 || (unsigned long) buf + count >= 0xF000)
+    if (buf < 0x1000 || (unsigned long) buf + count > 0xF000)
         return -1;
 
     ssize_t done_count = 0;
@@ -179,10 +216,10 @@ ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count) {
         if (inc_count > MEM_USER_BUFFER_SIZE)
             inc_count = MEM_USER_BUFFER_SIZE;
         if (inc_count == 0)
-            continue;
+            break;
         
         char *buf_copy = mem_get_user_buffer();
-        ssize_t this_count = file_read(open_file->file, buf_copy, count, open_file->pos);
+        ssize_t this_count = file_read(open_file->file, buf_copy, inc_count, open_file->pos);
 
         if (this_count < 0) {
             if (done_count == 0)
@@ -190,7 +227,8 @@ ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count) {
             break;
         }
 
-        mem_copy_from_user_buffer(buf + done_count, count);
+        mem_copy_from_user_buffer(buf + done_count, this_count);
+
         done_count += this_count;
         open_file->pos += this_count;
         if (this_count < inc_count)
@@ -215,7 +253,7 @@ ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count) {
         if (inc_count > MEM_USER_BUFFER_SIZE)
             inc_count = MEM_USER_BUFFER_SIZE;
         if (inc_count == 0)
-            continue;
+            break;
         
         char *buf_copy = mem_copy_to_user_buffer(buf + done_count, inc_count);
         ssize_t this_count = file_write(open_file->file, buf_copy, inc_count, open_file->pos);

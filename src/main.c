@@ -21,14 +21,13 @@
  
 #pragma portmode z180
 
-extern char init[0xE000];
-
 extern uintptr_t syscall_sp;
 
 extern unsigned char trap_cbar;
 
 extern struct module dev_asci_module;
 extern struct module fs_dev_module;
+extern struct module fs_initrd_module;
 extern struct module sd_module;
 
 int main(void) {
@@ -42,6 +41,7 @@ int main(void) {
     module_init(&dev_asci_module);
     dma_0_init();
     module_init(&fs_dev_module);
+    module_init(&fs_initrd_module);
     io_system_init();
     spi_init();
     module_init(&sd_module);
@@ -63,13 +63,23 @@ int main(void) {
     pid_t pid = sys_fork();
     if(pid == 0) {
         // Copy init binary to run location
-        dma_memcpy(pa_from_pfn(CBR) + 0x1000, pa_from_pfn(BBR) + (uintptr_t) init, sizeof(init));
+        int init_fd = sys_open((uintptr_t) "Y:init", 0);
+        if (init_fd < 0) {
+            // panic()
+            // TODO: Add panic
+            while (1)
+                ;
+        }
+        sys_read(init_fd, 0x1000, 0xE000);
+        sys_close(init_fd);
+
         // Manually setup the user-space stack
         uintptr_t tmp_ptr = 0x0000; // Returning from init is currently an error, reset system
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
         tmp_ptr = 0x1000;
         dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
         syscall_sp = 0xEFFC;
+
         syscall_leave();
         while (1)
             ;

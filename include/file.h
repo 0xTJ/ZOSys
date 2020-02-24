@@ -17,10 +17,26 @@ struct file {
     size_t ref_count;
     union {
         struct {
+            struct mountpoint *mp;
+            ino_t inode;
+        } plain;
+        struct {
             int major : 8;
             int minor : 8;
         } special;
     };
+};
+
+typedef int (*file_open_func)(struct file *file_ptr, int flags);
+typedef int (*file_close_func)(struct file *file_ptr);
+typedef ssize_t (*file_read_func)(struct file *file_ptr, char *buf, size_t count, unsigned long pos);
+typedef ssize_t (*file_write_func)(struct file *file_ptr, const char *buf, size_t count, unsigned long pos);
+
+struct file_ops {
+    file_open_func open;
+    file_close_func close;
+    file_read_func read;
+    file_write_func write;
 };
 
 struct open_file {
@@ -32,6 +48,9 @@ struct file *file_file_new(void);
 void file_file_free(struct file *ptr);
 void file_file_ref(struct file *ptr);
 void file_file_unref(struct file *ptr);
+
+void file_init_plain(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
+void file_init_special(struct file *file_ptr, int major, int minor);
 
 struct open_file *file_open_file_new(void);
 struct open_file *file_open_file_clone(struct open_file *src);
