@@ -3,7 +3,8 @@
 #include "vfs.h"
 #include <string.h>
 
-extern char init[0xE000];
+extern char initrd_init_start[];
+extern char initrd_init_end[];
 
 int fs_initrd_init(void);
 void fs_initrd_exit(void);
@@ -46,9 +47,27 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
 }
 
 ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
+    char *start = NULL;
+    char *end = NULL;
+
     if (file_ptr->plain.inode == 0) {
-        // TODO: Be less trusting
-        memcpy(buf, init + pos, count);
+        start = initrd_init_start;
+        end = initrd_init_end;
     }
-    return count;
+
+    if (start && end) {
+        size_t file_size = end - start;
+
+        if (pos >= file_size) {
+            return -1;
+        } else if (pos + count > file_size) {
+            count = file_size - pos;
+        }
+
+        memcpy(buf, start + pos, count);
+    
+        return count;
+    }
+
+    return -1;
 }
