@@ -1,4 +1,5 @@
 #include "file.h"
+#include "device.h"
 #include "process.h"
 #include "vfs.h"
 #include <stdlib.h>
@@ -66,64 +67,63 @@ void file_open_file_free(struct open_file *ptr) {
 
 struct file *file_open(const char *pathname, int flags) {
     struct filesystem *fs = NULL;
-    struct file *file = NULL;
+    struct file *file_ptr = NULL;
     int result = -1;
 
     fs = vfs_get_fs(pathname);
 
     if (fs) {
-        file = fs->get_file(fs, pathname + 2);
+        file_ptr = fs->get_file(fs, pathname + 2);
     }
 
-    if (file) {
-        switch (file->type) {
-        case FILE_CHAR_DEV:
-            result = device_char_open(file->dev_char, flags);
-            break;
-        case FILE_BLOCK_DEV:
-            result = device_block_open(file->dev_block, flags);
+    if (file_ptr) {
+        switch (file_ptr->type) {
+        case FILE_SPECIAL:
+            result = device_open(file_ptr, flags);
             break;
         default:
+            // panic();
+            // TODO: Add panic()
             result = -1;
             break;
         }
     }
 
     if (result < 0)
-        file = NULL;
+        file_ptr = NULL;
 
-    return file;
+    return file_ptr;
 }
 
-int file_close(struct file *file) {
-    switch (file->type) {
-    case FILE_CHAR_DEV:
-        return device_char_close(file->dev_char);
-    case FILE_BLOCK_DEV:
-        return device_block_close(file->dev_block);
+int file_close(struct file *file_ptr) {
+    switch (file_ptr->type) {
+    case FILE_SPECIAL:
+        return device_close(file_ptr);
     default:
+        // panic();
+        // TODO: Add panic()
         return -1;
     }
 }
 
-ssize_t file_read(struct file *file, char *buf, size_t count, unsigned long pos) {
-    switch (file->type) {
-    case FILE_CHAR_DEV:
-        return device_char_read(file->dev_char, buf, count, pos);
-    case FILE_BLOCK_DEV:
-        return device_block_read(file->dev_block, buf, count, pos);
+ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
+    switch (file_ptr->type) {
+    case FILE_SPECIAL:
+        return device_read(file_ptr, buf, count, pos);
     default:
+        // panic();
+        // TODO: Add panic()
         return -1;
     }
 }
 
-ssize_t file_write(struct file *file, const char *buf, size_t count, unsigned long pos) {
-    switch (file->type) {
-    case FILE_CHAR_DEV:
-        return device_char_write(file->dev_char, buf, count, pos);
-    case FILE_BLOCK_DEV:
-        return device_block_write(file->dev_block, buf, count, pos);
+ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
+    switch (file_ptr->type) {
+    case FILE_SPECIAL:
+        return device_write(file_ptr, buf, count, pos);
     default:
+        // panic();
+        // TODO: Add panic()
         return -1;
     }
 }

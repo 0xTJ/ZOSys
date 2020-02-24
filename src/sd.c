@@ -48,9 +48,10 @@ struct module sd_module = {
     sd_exit
 };
 
-struct device_block_driver sd_driver = {
-    dummy_block_open,
-    dummy_block_close,
+struct device_driver sd_driver = {
+    "SD",
+    dev_dummy_open,
+    dev_dummy_close,
     sd_read,
     sd_write
 };
@@ -328,19 +329,25 @@ uint8_t sd_write_single_block(uint32_t addr, const uint8_t *buf, uint8_t *token)
 }
 
 int sd_init(void) {
+    int result = -1;
+
     mutex_lock(&spi_mtx);
 
     sd_power_up_seq();
 
-    if (sd_go_idle_state() > 0x01)
-        return -1;
+    if (sd_go_idle_state() > 0x01) {
+        result = -1;
+        goto done;
+    }
 
     uint8_t command_version;
     uint8_t reserved_bits;
     uint8_t voltage_accepted;
     uint8_t check_pattern;
-    if (sd_send_if_cond(&command_version, &reserved_bits, &voltage_accepted, &check_pattern) > 0x01)
-        return -1;
+    if (sd_send_if_cond(&command_version, &reserved_bits, &voltage_accepted, &check_pattern) > 0x01) {
+        result = -1;
+        goto done;
+    }
 
     uint8_t send_op_cond_result = 0xFF;
     for (unsigned char init_attempts = 0; init_attempts < 100; ++init_attempts) {
@@ -352,20 +359,23 @@ int sd_init(void) {
         }
         cpu_delay_ms(10);
     }
-    if (send_op_cond_result != 0x00)
-        return -1;
+    if (send_op_cond_result != 0x00) {
+        result = -1;
+        goto done;
+    }
 
     uint32_t ocr;
-    if (sd_read_ocr(&ocr) > 0x01)
-        return -1;
+    if (sd_read_ocr(&ocr) > 0x01) {
+        result = -1;
+        goto done;
+    }
 
+    result = 0;
+
+done:
     mutex_unlock(&spi_mtx);
 
-    sd_0 = device_block_new(&sd_driver, SD_BLOCK_LEN);
-    if (!sd_0)
-        return -1;
-
-    return 0;
+    return result;
 }
 
 void sd_exit(void) {
@@ -373,36 +383,40 @@ void sd_exit(void) {
     return;
 }
 
-ssize_t sd_read(struct device_block *dev, char *buf, unsigned int block_count, unsigned long pos) {
+ssize_t sd_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
     ssize_t result = 0;
     uint8_t token = 0xFF;
     
-    while (block_count) {
-        sd_read_single_block(pos, buf, &token);
+    // TODO: Re-implement
 
-        pos += dev->block_size;
-        buf += dev->block_size;
-        result += dev->block_size;
+    // while (block_count) {
+    //     sd_read_single_block(pos, buf, &token);
 
-        block_count -= 1;
-    }
+    //     pos += SD_BLOCK_LEN;
+    //     buf += SD_BLOCK_LEN;
+    //     result += SD_BLOCK_LEN;
+
+    //     block_count -= 1;
+    // }
 
     return result;
 }
 
-ssize_t sd_write(struct device_block *dev, const char *buf, unsigned int block_count, unsigned long pos) {
+ssize_t sd_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
     ssize_t result = 0;
     uint8_t token = 0xFF;
     
-    while (block_count) {
-        sd_write_single_block(pos, buf, &token);
+    // TODO: Re-implement
 
-        pos += dev->block_size;
-        buf += dev->block_size;
-        result += dev->block_size;
+    // while (block_count) {
+    //     sd_write_single_block(pos, buf, &token);
 
-        block_count -= 1;
-    }
+    //     pos += SD_BLOCK_LEN;
+    //     buf += SD_BLOCK_LEN;
+    //     result += SD_BLOCK_LEN;
+
+    //     block_count -= 1;
+    // }
 
     return result;
 }

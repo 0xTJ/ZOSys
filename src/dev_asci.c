@@ -25,15 +25,13 @@ struct module dev_asci_module = {
     dev_asci_exit
 };
 
-struct device_char_driver asci_driver = {
-    dummy_char_open,
-    dummy_char_close,
+struct device_driver asci_driver = {
+    "ASCI",
+    dev_dummy_open,
+    dev_dummy_close,
     asci_read,
     asci_write
 };
-
-struct device_char *asci_0;
-struct device_char *asci_1;
 
 unsigned char asci0_rx_buf[ASCI0_RX_BUF_SIZE];
 struct circular_buffer asci0_rx_circ_buf = {
@@ -62,51 +60,28 @@ struct circular_buffer asci1_tx_circ_buf = {
 int dev_asci_init(void) {
     asci_0_init();
     asci_1_init();
+
+    device_register_driver(0, &asci_driver);
+
     return 0;
 }
 
 void dev_asci_exit(void) {
+    // TODO: Unregister driver
+
     return;
 }
 
-void asci_0_init(void) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+void asci_0_init(void) __critical {
     CNTLA0 = __IO_CNTLA0_RE | __IO_CNTLA0_TE | __IO_CNTLA0_MODE_8N1;
     CNTLB0 = __IO_CNTLB0_SS_DIV_1;
     STAT0 = __IO_STAT0_RIE;
-
-    cpu_set_int_state(int_state);
-
-    asci_0 = device_char_new(&asci_driver);
-
-    if (!asci_0)
-        return;
-
-    asci_0->data_ui = 0;
-
-    mutex_unlock(&asci_0->mtx);
 }
 
-void asci_1_init(void) {
-    uint8_t int_state = cpu_get_int_state();
-    intrinsic_di();
-
+void asci_1_init(void) __critical {
     CNTLA1 = __IO_CNTLA1_TE | __IO_CNTLA1_CKA1D | __IO_CNTLA1_MODE_8N1;
     CNTLB1 = __IO_CNTLB1_SS_DIV_1;
     STAT1 = __IO_STAT1_RIE;
-
-    cpu_set_int_state(int_state);
-
-    asci_1 = device_char_new(&asci_driver);
-
-    if (!asci_1)
-        return;
-
-    asci_1->data_ui = 1;
-
-    mutex_unlock(&asci_1->mtx);
 }
 
 int asci_0_putc(char c) __critical {
@@ -147,54 +122,52 @@ int asci_1_getc(void) __critical {
     return (unsigned char) c;
 }
 
-ssize_t asci_read(struct device_char *dev, char *buf, size_t count, unsigned long pos) {
+ssize_t asci_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
     (void) pos;
 
     ssize_t result = -1;
     size_t i;
 
-    mutex_lock(&dev->mtx);
-
-    if (dev->data_ui == 0) {
+    if (file_ptr->special.minor == 0) {
         for (i = 0; i < count; ++i) {
             int tmp;
             if ((tmp = asci_0_getc()) < 0)
                 break;
             buf[i] = tmp;
         }
-        result = i;
-    } else if (dev->data_ui == 1) {
+        if (i != 0) {
+            result = i;
+        }
+    } else if (file_ptr->special.minor == 1) {
         for (i = 0; i < count; ++i) {
             int tmp;
             if ((tmp = asci_1_getc()) < 0)
                 break;
             buf[i] = tmp;
         }
-        result = i;
+        if (i != 0) {
+            result = i;
+        }
     } else {
         // Not ASCI0 or ASCI1
     }
 
-    mutex_unlock(&dev->mtx);
-
     return result;
 }
 
-ssize_t asci_write(struct device_char *dev, const char *buf, size_t count, unsigned long pos) {
+ssize_t asci_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
     (void) pos;
 
     ssize_t result = -1;
     size_t i;
 
-    mutex_lock(&dev->mtx);
-
-    if (dev->data_ui == 0) {
+    if (file_ptr->special.minor == 0) {
         for (i = 0; i < count; ++i) {
             if (asci_0_putc(buf[i]) < 0)
                 break;
         }
         result = i;
-    } else if (dev->data_ui == 1) {
+    } else if (file_ptr->special.minor == 1) {
         for (i = 0; i < count; ++i) {
             if (asci_1_putc(buf[i]) < 0)
                 break;
@@ -203,8 +176,6 @@ ssize_t asci_write(struct device_char *dev, const char *buf, size_t count, unsig
     } else {
         // Not ASCI0 or ASCI1
     }
-
-    mutex_unlock(&dev->mtx);
 
     return result;
 }

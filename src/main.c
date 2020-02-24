@@ -77,6 +77,8 @@ int main(void) {
 
     while (sys_waitpid(1, 0, WNOHANG) <= 0) {
         // Loop while process 1 exists as a child of process 0
+        // Busy loop because this is the lowest priority process and
+        // must remain runnable
     }
 
     kio_puts("System is halting\n");

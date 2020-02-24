@@ -1,7 +1,6 @@
 #ifndef INCLUDE_FILE_H
 #define INCLUDE_FILE_H
 
-#include "device.h"
 #include "mem.h"
 #include <stdint.h>
 #include <sys/types.h>
@@ -10,17 +9,18 @@
 
 enum file_type {
     FILE_PLAIN,
-    FILE_CHAR_DEV,
-    FILE_BLOCK_DEV
+    FILE_SPECIAL,
 };
 
 struct file {
     enum file_type type;
-    union {
-        struct device_char *dev_char;
-        struct device_block *dev_block;
-    };
     size_t ref_count;
+    union {
+        struct {
+            int major : 8;
+            int minor : 8;
+        } special;
+    };
 };
 
 struct open_file {

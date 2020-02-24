@@ -3,8 +3,6 @@
 #include "vfs.h"
 #include <string.h>
 
-extern struct device_char *asci_0;
-
 int fs_dev_init(void);
 void fs_dev_exit(void);
 struct file *fs_dev_get_file(struct filesystem *, const char *);
@@ -32,8 +30,9 @@ struct file *fs_dev_get_file(struct filesystem *fs, const char *pathname) {
     if (strcmp(pathname, "asci0") == 0) {
         file = file_file_new();
         if (file) {
-            file->type = FILE_CHAR_DEV;
-            file->dev_char = asci_0;
+            file->type = FILE_SPECIAL;
+            file->special.major = 1;
+            file->special.minor = 0;
         }
     }
     return file;

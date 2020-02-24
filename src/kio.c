@@ -1,12 +1,9 @@
 #include "kio.h"
-#include "device.h"
 
-#define kio_device asci_0
-
-extern struct device_char *kio_device;
+int asci_0_putc(char c);
 
 void kio_putc(char c) {
-    device_char_write(kio_device, &c, 1, 0);
+    asci_0_putc(c);
 }
 
 void kio_puts(char *s) {
