@@ -40,12 +40,12 @@
 #define CMD24_CRC               0x00
 #define SD_MAX_WRITE_ATTEMPTS   3907
 
-int sd_init(void);
-void sd_exit(void);
+int dev_sd_init(void);
+void dev_sd_exit(void);
 
-struct module sd_module = {
-    sd_init,
-    sd_exit
+struct module dev_sd_module = {
+    dev_sd_init,
+    dev_sd_exit
 };
 
 struct file_ops sd_driver = {
@@ -325,7 +325,7 @@ uint8_t sd_write_single_block(uint32_t addr, const uint8_t *buf, uint8_t *token)
     return r1;
 }
 
-int sd_init(void) {
+int dev_sd_init(void) {
     int result = -1;
 
     mutex_lock(&spi_mtx);
@@ -375,7 +375,7 @@ done:
     return result;
 }
 
-void sd_exit(void) {
+void dev_sd_exit(void) {
     // TODO: Clean up
     return;
 }

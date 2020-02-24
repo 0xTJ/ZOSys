@@ -26,9 +26,9 @@ extern uintptr_t syscall_sp;
 extern unsigned char trap_cbar;
 
 extern struct module dev_asci_module;
+extern struct module dev_sd_module;
 extern struct module fs_dev_module;
 extern struct module fs_initrd_module;
-extern struct module sd_module;
 
 int main(void) {
     CMR = __IO_CMR_X2;
@@ -44,7 +44,7 @@ int main(void) {
     module_init(&fs_initrd_module);
     io_system_init();
     spi_init();
-    module_init(&sd_module);
+    module_init(&dev_sd_module);
 
     // Create process information structures
     kio_puts("Initializing processes\n");
