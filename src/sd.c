@@ -48,12 +48,9 @@ struct module sd_module = {
     sd_exit
 };
 
-struct device_driver sd_driver = {
-    "SD",
-    dev_dummy_open,
-    dev_dummy_close,
-    sd_read,
-    sd_write
+struct file_ops sd_driver = {
+    .read = sd_read,
+    .write = sd_write,
 };
 
 struct device_block *sd_0;

@@ -2,9 +2,9 @@
 #include <adt.h>
 #include <stdlib.h>
 
-struct device_driver *device_drivers[DEVICE_MAJOR_NUM] = {0};
+struct file_ops *device_drivers[DEVICE_MAJOR_NUM] = {0};
 
-int device_register_driver(int major, struct device_driver *drv) __critical {
+int device_register_driver(int major, struct file_ops *drv) __critical {
     if (major == 0) {
         for (int new_major = 1; new_major <= DEVICE_MAJOR_NUM; ++new_major) {
             if (!device_drivers[new_major - 1]) {
@@ -27,53 +27,45 @@ int device_register_driver(int major, struct device_driver *drv) __critical {
 }
 
 int device_open(struct file *file_ptr, int flags) {
-    struct device_driver *driver = device_drivers[file_ptr->special.major - 1];
-    if (!driver || !driver->open) {
+    struct file_ops *driver = device_drivers[file_ptr->special.major - 1];
+    if (!driver) {
         return -1;
+    }
+    if (!driver->open) {
+        return 0;
     }
     return driver->open(file_ptr, flags);
 }
 
 int device_close(struct file *file_ptr) {
-    struct device_driver *driver = device_drivers[file_ptr->special.major - 1];
-    if (!driver || !driver->close) {
+    struct file_ops *driver = device_drivers[file_ptr->special.major - 1];
+    if (!driver) {
         return -1;
+    }
+    if (!driver->close) {
+        return 0;
     }
     return driver->close(file_ptr);
 }
 
 ssize_t device_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
-    struct device_driver *driver = device_drivers[file_ptr->special.major - 1];
-    if (!driver || !driver->read) {
+    struct file_ops *driver = device_drivers[file_ptr->special.major - 1];
+    if (!driver) {
+        return -1;
+    }
+    if (!driver->read) {
         return -1;
     }
     return driver->read(file_ptr, buf, count, pos);
 }
 
 ssize_t device_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
-    struct device_driver *driver = device_drivers[file_ptr->special.major - 1];
-    if (!driver || !driver->write) {
+    struct file_ops *driver = device_drivers[file_ptr->special.major - 1];
+    if (!driver) {
         return -1;
     }
+    if (!driver->write) {
+        return 0;
+    }
     return driver->write(file_ptr, buf, count, pos);
-}
-
-int dev_dummy_open(struct file *file_ptr, int flags) {
-    (void) file_ptr; (void) flags;
-    return 0;
-}
-
-int dev_dummy_close(struct file *file_ptr) {
-    (void) file_ptr;
-    return 0;
-}
-
-ssize_t dev_dummy_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
-    (void) file_ptr; (void) buf; (void) count; (void) pos;
-    return -1;
-}
-
-ssize_t dev_dummy_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
-    (void) file_ptr; (void) buf; (void) count; (void) pos;
-    return-1;
 }

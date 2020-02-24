@@ -25,12 +25,9 @@ struct module dev_asci_module = {
     dev_asci_exit
 };
 
-struct device_driver asci_driver = {
-    "ASCI",
-    dev_dummy_open,
-    dev_dummy_close,
-    asci_read,
-    asci_write
+struct file_ops asci_driver = {
+    .read = asci_read,
+    .write = asci_write,
 };
 
 unsigned char asci0_rx_buf[ASCI0_RX_BUF_SIZE];
