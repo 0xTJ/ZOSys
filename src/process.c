@@ -12,9 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "kio.h"
-
 #pragma portmode z180
+
+extern uintptr_t syscall_sp;
 
 struct created_process {
     p_list_t proc_list;
@@ -359,4 +359,21 @@ void sys_exit(int status) {
     process_schedule();
     // TODO: Add panic()
     // panic();    // Should never return to here
+}
+
+int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) argv, USER_PTR(USER_PTR(char) const) envp) {
+    // Copy binary to run location
+    int exec_fd = sys_open(pathname, 0);
+    if (exec_fd < 0) {
+        return -1;
+    }
+    sys_read(exec_fd, 0x1000, 0xE000);
+    sys_close(exec_fd);
+
+    // Setup the user-space stack
+    uintptr_t tmp_ptr = 0x0000; // Returning from init is currently an error, reset system
+    dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
+    tmp_ptr = 0x1000;
+    dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
+    syscall_sp = 0xEFFC;
 }

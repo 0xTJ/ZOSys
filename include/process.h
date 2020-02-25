@@ -56,6 +56,7 @@ int process_clone_files(struct process *to, struct process *from);
 int sys_fork(void);
 pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options);
 void sys_exit(int status);
+int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) argv, USER_PTR(USER_PTR(char) const) envp);
 
 void syscall_leave(void);
 

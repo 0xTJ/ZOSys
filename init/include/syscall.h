@@ -13,5 +13,6 @@ int open(const char *pathname, int flags);
 int close(int fd);
 ssize_t read(int fd, char *buf, size_t count);
 ssize_t write(int fd, const char *buf, size_t count);
+int execve(const char *pathname, char *const argv[], char *const envp[]);
 
 #endif

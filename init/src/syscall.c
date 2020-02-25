@@ -37,3 +37,9 @@ ssize_t write(int fd, const char *buf, size_t count) __naked {
     __asm__("ld a, 6\nrst 8\nret");
     (void) fd, (void) buf, (void) count;
 }
+
+int execve(const char *pathname, char *const argv[], char *const envp[]) __naked {
+    __asm__("ld a, 6\nrst 8\nret");
+    (void) pathname, (void) argv, (void) envp;
+}
+

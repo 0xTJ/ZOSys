@@ -83,6 +83,7 @@ EXTERN _sys_open
 EXTERN _sys_close
 EXTERN _sys_read
 EXTERN _sys_write
+EXTERN _sys_execve
 syscall_table:
     DEFW _sys_fork
     DEFW _sys_waitpid
@@ -91,6 +92,7 @@ syscall_table:
     DEFW _sys_close
     DEFW _sys_read
     DEFW _sys_write
+    DEFW _sys_execve
     DEFS (0x100 - (ASMPC - syscall_table)) * 2, 0x00
     
 

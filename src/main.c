@@ -63,22 +63,8 @@ int main(void) {
     pid_t pid = sys_fork();
     if(pid == 0) {
         // Copy init binary to run location
-        int init_fd = sys_open((uintptr_t) "Y:init", 0);
-        if (init_fd < 0) {
-            // panic()
-            // TODO: Add panic
-            while (1)
-                ;
-        }
-        sys_read(init_fd, 0x1000, 0xE000);
-        sys_close(init_fd);
-
-        // Manually setup the user-space stack
-        uintptr_t tmp_ptr = 0x0000; // Returning from init is currently an error, reset system
-        dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
-        tmp_ptr = 0x1000;
-        dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
-        syscall_sp = 0xEFFC;
+        // This only work because "Y:init" is also copied to user space on fork
+        sys_execve((uintptr_t) "Y:init", (uintptr_t) NULL, (uintptr_t) NULL);
 
         syscall_leave();
         while (1)
