@@ -5,6 +5,8 @@
 
 extern char initrd_init_start[];
 extern char initrd_init_end[];
+extern char initrd_sh_start[];
+extern char initrd_sh_end[];
 
 int fs_initrd_init(void);
 void fs_initrd_exit(void);
@@ -37,12 +39,19 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
     (void) mp;
 
     struct file *file_ptr = NULL;
+
     if (strcmp(pathname, "init") == 0) {
         file_ptr = file_file_new();
         if (file_ptr) {
-            file_init_plain(file_ptr, mp, 0);
+            file_init_plain(file_ptr, mp, 1);
+        }
+    } else if (strcmp(pathname, "sh") == 0) {
+        file_ptr = file_file_new();
+        if (file_ptr) {
+            file_init_plain(file_ptr, mp, 2);
         }
     }
+
     return file_ptr;
 }
 
@@ -50,9 +59,12 @@ ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned 
     char *start = NULL;
     char *end = NULL;
 
-    if (file_ptr->plain.inode == 0) {
+    if (file_ptr->plain.inode == 1) {
         start = initrd_init_start;
         end = initrd_init_end;
+    } else if (file_ptr->plain.inode == 2) {
+        start = initrd_sh_start;
+        end = initrd_sh_end;
     }
 
     if (start && end) {
