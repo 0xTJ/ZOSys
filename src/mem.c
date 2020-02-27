@@ -2,6 +2,7 @@
 #include "dma.h"
 #include <cpu.h>
 #include <intrinsic.h>
+#include <string.h>
 
 #define PAGE_COUNT 256U
 #define PAGES_PER_BLOCK 16U
@@ -81,11 +82,61 @@ void mem_free_page_block(unsigned char page) __critical {
     page_usage_map[page_block] = 0x0000;
 }
 
-char *mem_get_user_buffer(void) {
+USER_PTR(void) mem_memcpy_user_from_kconst(USER_PTR(void) dest, const void *src, size_t count) {
+    dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, 0x00000U + (uintptr_t) src, count);
+    return dest;
+}
+
+USER_PTR(void) mem_memcpy_user_from_kdata(USER_PTR(void) dest, const void *src, size_t count) {
+    dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, pa_from_pfn(BBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+USER_PTR(void) mem_memcpy_user_from_kstack(USER_PTR(void) dest, const void *src, size_t count) {
+    dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, pa_from_pfn(CBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+USER_PTR(void) mem_memcpy_user_from_kernel(USER_PTR(void) dest, const void *src, size_t count) {
+    if (dest >= 0xF000) {
+        return mem_memcpy_user_from_kstack(dest, src, count);
+    } else if (dest >= 0x1000) {
+        return mem_memcpy_user_from_kdata(dest, src, count);
+    } else {
+        return mem_memcpy_user_from_kconst(dest, src, count);
+    }
+}
+
+void *mem_memcpy_kdata_from_user(void *dest, USER_PTR(const void) src, size_t count) {
+    dma_memcpy(pa_from_pfn(BBR) + (uintptr_t) dest, pa_from_pfn(CBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+void *mem_memcpy_kstack_from_user(void *dest, USER_PTR(const void) src, size_t count) {
+    dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, pa_from_pfn(CBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+void *mem_memcpy_kernel_from_user(void *dest, USER_PTR(const void) src, size_t count) {
+    if (dest >= (void *) 0xF000) {
+        return mem_memcpy_kstack_from_user(dest, src, count);
+    } else if (dest >= (void *) 0x1000) {
+        return mem_memcpy_kdata_from_user(dest, src, count);
+    } else {
+        return dest;
+    }
+}
+
+USER_PTR(void) mem_memcpy_user_from_user(USER_PTR(void) dest, USER_PTR(const void) src, size_t count) {
+    dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, pa_from_pfn(CBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+void *mem_get_user_buffer(void) {
     return user_buffer;
 }
 
-char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count) {
+void *mem_copy_to_user_buffer(USER_PTR(void) user_ptr, size_t count) {
     if (count > sizeof(user_buffer)) {
         // panic();
         // TODO: Add panic() and use instead of the following
@@ -101,7 +152,7 @@ char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count) {
     return user_buffer;
 }
 
-char *mem_copy_from_user_buffer(uintptr_t user_ptr, size_t count) {
+void *mem_copy_from_user_buffer(USER_PTR(void) user_ptr, size_t count) {
     if (count > sizeof(user_buffer)) {
         // panic();
         // TODO: Add panic() and use instead of the following
@@ -115,4 +166,37 @@ char *mem_copy_from_user_buffer(uintptr_t user_ptr, size_t count) {
     dma_memcpy(dest_addr, user_buffer_addr, count);
 
     return user_buffer;
+}
+
+ssize_t mem_strlen(USER_PTR(const char) user_ptr) {
+    mem_copy_to_user_buffer(user_ptr, MEM_USER_BUFFER_SIZE);
+
+    size_t len = strnlen(user_buffer, MEM_USER_BUFFER_SIZE);
+
+    if (len == MEM_USER_BUFFER_SIZE) {
+        return -1;
+    } else {
+        return len;
+    }
+}
+
+ssize_t mem_vector_len(USER_PTR(void *) user_vector) {
+    void **copied_vector = mem_copy_to_user_buffer(user_vector, MEM_USER_BUFFER_SIZE);
+
+    unsigned int null_index = 0;
+    bool found_null = false;
+    const unsigned int max_pointers = MEM_USER_BUFFER_SIZE / sizeof(char *);
+    while (null_index < max_pointers) {
+        if (!copied_vector[null_index]) {
+            found_null = true;
+            break;
+        }
+        null_index += 1;
+    }
+
+    if (!found_null) {
+        return -1;
+    } else {
+        return null_index;
+    }
 }

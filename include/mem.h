@@ -24,8 +24,19 @@ int mem_alloc_page_block_specific(unsigned int page);
 void mem_free_page(unsigned char page);
 void mem_free_page_block(unsigned char page);
 
-char *mem_get_user_buffer(void);
-char *mem_copy_to_user_buffer(uintptr_t user_ptr, size_t count);
-char *mem_copy_from_user_buffer(uintptr_t user_ptr, size_t count);
+USER_PTR(void) mem_memcpy_user_from_kconst(USER_PTR(void) dest, const void *src, size_t count);
+USER_PTR(void) mem_memcpy_user_from_kdata(USER_PTR(void) dest, const void *src, size_t count);
+USER_PTR(void) mem_memcpy_user_from_kstack(USER_PTR(void) dest, const void *src, size_t count);
+USER_PTR(void) mem_memcpy_user_from_kernel(USER_PTR(void) dest, const void *src, size_t count);
+void *mem_memcpy_kdata_from_user(void *dest, USER_PTR(const void) src, size_t count);
+void *mem_memcpy_kstack_from_user(void *dest, USER_PTR(const void) src, size_t count);
+void *mem_memcpy_kernel_from_user(void *dest, USER_PTR(const void) src, size_t count);
+USER_PTR(void) mem_memcpy_user_from_user(USER_PTR(void) dest, USER_PTR(const void) src, size_t count);
+
+void *mem_get_user_buffer(void);
+void *mem_copy_to_user_buffer(USER_PTR(void) user_ptr, size_t count);
+void *mem_copy_from_user_buffer(USER_PTR(void) user_ptr, size_t count);
+ssize_t mem_strlen(USER_PTR(const char) user_ptr);  // Clobbers user buffer, returns -1 if the string is longer than MEM_USER_BUFFER_SIZE - 1
+ssize_t mem_vector_len(USER_PTR(void *) user_vector);   // Clobbers user buffer, return -1 if the vector table or any string is too long
 
 #endif
