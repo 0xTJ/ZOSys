@@ -10,7 +10,7 @@ int stdin_fd;
 int stdout_fd;
 int stderr_fd;
 
-void main(int argc, char **argv, char **envp) {
+int main(int argc, char **argv, char **envp) {
     stdin_fd = open("Z:asci0", 0);
     stdout_fd = open("Z:asci0", 0);
     stderr_fd = open("Z:asci0", 0);
@@ -37,7 +37,10 @@ void main(int argc, char **argv, char **envp) {
 
     pid_t pid = fork();
     if(pid == 0) {
-        shell();
+        if (execve("Y:sh", argv, envp) < 0) {
+            const char *tmp = "Failed execve\n";
+            write(stdout_fd, tmp, strlen(tmp));
+        }
         // TODO: exit instead of looping
         while (1)
             ;
@@ -49,24 +52,7 @@ void main(int argc, char **argv, char **envp) {
         if (wpid == -1) {
             const char *done_message = "All non-init processes have exited\n";
             write(stdout_fd, done_message, strlen(done_message));
-            _exit(0);
-        }
-    }
-}
-
-void shell(void) {
-    const char prompt[] = "> ";
-    write(stdout_fd, prompt, strlen(prompt));
-
-    while (1) {
-        char tmp;
-        if (read(stdin_fd, &tmp, 1) > 0) {
-            if (tmp == 'x') {
-                const char *exit_message = "\nExiting\n";
-                write(stdout_fd, exit_message, strlen(exit_message));
-                _exit(0);
-            }
-            write(stdout_fd, &tmp, 1);
+            return 0;
         }
     }
 }

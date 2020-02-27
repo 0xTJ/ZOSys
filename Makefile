@@ -6,6 +6,7 @@ SRCDIR = src
 DEPDIR = dep
 OBJDIR = obj
 INITDIR = init
+SHDIR = sh
 
 SRCS_C = $(wildcard $(SRCDIR)/*.c)
 SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)/*.s))
@@ -20,9 +21,9 @@ LDLIBS += -lm
 
 TARGET = zosys
 
-.PHONY: all clean init
+.PHONY: all clean init sh
 
-all: init $(TARGET).bin
+all: init sh $(TARGET).bin
 
 $(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
@@ -30,11 +31,11 @@ $(TARGET).bin: $(OBJS)
 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
 
-$(OBJDIR)/init.o: $(SRCDIR)/init.s $(INITDIR)/init.bin
-	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
-
 init:
 	$(MAKE) -C $(INITDIR)
+
+sh:
+	$(MAKE) -C $(SHDIR)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@

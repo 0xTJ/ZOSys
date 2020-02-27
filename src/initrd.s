@@ -8,5 +8,5 @@ _initrd_init_start:
 _initrd_init_end:
 
 _initrd_sh_start:
-    BINARY "init/init.bin"
+    BINARY "sh/sh.bin"
 _initrd_sh_end:

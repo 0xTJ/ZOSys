@@ -17,7 +17,7 @@ CFLAGS += --list -SO3 -clib=sdcc_iy --math32_z180 #--max-allocs-per-node200000
 LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy --math32_z180
 LDLIBS += -lm
 
-TARGET = init
+TARGET = sh
 
 .PHONY: all clean
 
