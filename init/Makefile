@@ -25,6 +25,7 @@ all: $(TARGET).bin
 
 $(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(RM) ../$(OBJDIR)/initrd.o
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@

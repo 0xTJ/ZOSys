@@ -128,7 +128,7 @@ ORG 0xF000
 
 PUBLIC kernel_stack, kernel_stack_tail
 kernel_stack:
-    DEFS 0x200
+    DEFS 0x400
 kernel_stack_tail:
 
 SECTION kernel

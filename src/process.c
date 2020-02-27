@@ -361,19 +361,164 @@ void sys_exit(int status) {
     // panic();    // Should never return to here
 }
 
+// ssize_t user_string_vector_space(USER_PTR(USER_PTR(char) const) vect) {
+
+
+//     size_t argv_table_size = (argc + 1) * sizeof(char *);
+// }
+
 int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) argv, USER_PTR(USER_PTR(char) const) envp) {
+    uintptr_t new_sp = 0xF000;
+
+    uintptr_t tmp_ptr;
+
+    unsigned int i;
+    ssize_t string_len;
+
+    // Get number of elements in vectors
+    int argc = mem_user_vector_len((USER_PTR(void *)) argv);
+    int envc = mem_user_vector_len((USER_PTR(void *)) envp);
+    if (argc < 0 || envc < 0) {
+        // Either table was invalid
+        return -1;
+    }
+
+    // Copy argv to a dynamic buffer
+    const size_t argv_size = (argc + 1) * sizeof(USER_PTR(char) const);
+    USER_PTR(char) *dynamic_argv = malloc(argv_size);
+    if (!dynamic_argv) {
+        return -1;
+    }
+    mem_memcpy_kernel_from_user(dynamic_argv, argv, argv_size);
+
+    // Verify argv pointers and accumulate string size
+    size_t argv_strings_size = 0;
+    for (i = 0; i < argc; ++i) {
+        string_len = mem_user_strlen(dynamic_argv[i]);
+        if (string_len < 0) {
+            // Invalid pointer or string too long
+            free(dynamic_argv);
+            return -1;
+        }
+        // TODO: Ensure that we don't overflow argv_strings_size; possible by using overlapping strings
+        argv_strings_size += string_len + 1;
+    }
+
+    // Copy envp to a dynamic buffer
+    const size_t envp_size = (envc + 1) * sizeof(USER_PTR(char) const);
+    USER_PTR(char) *dynamic_envp = malloc(envp_size);
+    if (!dynamic_envp) {
+        free(dynamic_argv);
+        return -1;
+    }
+    mem_memcpy_kernel_from_user(dynamic_envp, envp, envp_size);
+
+    // Verify envp pointers and accumulate string size
+    size_t envp_strings_size = 0;
+    for (i = 0; i < envc; ++i) {
+        string_len = mem_user_strlen(dynamic_envp[i]);
+        if (string_len < 0) {
+            // Invalid pointer or string too long
+            free(dynamic_argv);
+            free(dynamic_envp);
+            return -1;
+        }
+        // TODO: Ensure that we don't overflow envp_strings_size; possible by using overlapping strings
+        envp_strings_size += string_len + 1;
+    }
+
+    // Setup offsets into vectors_buffer
+    const size_t argv_offset = 0;
+    const size_t envp_offset = argv_offset + (argc + 1) * sizeof(USER_PTR(char) const);
+    const size_t argv_strings_offset = envp_offset + (envc + 1) * sizeof(USER_PTR(char) const);
+    const size_t envp_strings_offset = argv_strings_offset + argv_strings_size;
+    const size_t vectors_buffer_size = envp_strings_offset + envp_strings_size;
+
+    // Adjust SP to fit vectors buffer
+    new_sp -= vectors_buffer_size;
+
+    // Allocate space for string vectors
+    char *vectors_buffer = malloc(vectors_buffer_size);
+    if (!vectors_buffer) {
+        free(dynamic_argv);
+        free(dynamic_envp);
+        return -1;
+    }
+
+    // Create argv and envp table pointers
+    USER_PTR(char) *argv_buffer = (USER_PTR(char) *) (vectors_buffer + argv_offset);
+    USER_PTR(char) *envp_buffer = (USER_PTR(char) *) (vectors_buffer + envp_offset);
+
+    // Copy strings to strings_buffer
+    size_t strings_offset = 0;
+    for (i = 0; i < argc; ++i) {
+        string_len = mem_user_strlen(dynamic_argv[i]);
+        if (string_len < 0) {
+            // Invalid pointer or string too long
+            free(dynamic_argv);
+            free(dynamic_envp);
+            free(vectors_buffer);
+            return -1;
+        }
+        argv_buffer[i] = new_sp + argv_strings_offset + strings_offset;
+        mem_memcpy_kernel_from_user(vectors_buffer + argv_strings_offset + strings_offset, dynamic_argv[i], string_len + 1);
+        strings_offset += string_len + 1;
+    }
+    argv_buffer[argc] = (uintptr_t) NULL;
+    strings_offset = 0;
+    for (i = 0; i < envc; ++i) {
+        string_len = mem_user_strlen(dynamic_envp[i]);
+        if (string_len < 0) {
+            // Invalid pointer or string too long
+            free(dynamic_argv);
+            free(dynamic_envp);
+            free(vectors_buffer);
+            return -1;
+        }
+        envp_buffer[i] = new_sp + envp_strings_offset + strings_offset;
+        mem_memcpy_kernel_from_user(vectors_buffer + envp_strings_offset + strings_offset, dynamic_envp[i], string_len + 1);
+        strings_offset += string_len + 1;
+    }
+    envp_buffer[envc] = (uintptr_t) NULL;
+
+    // Free dynamic vector tables
+    free(dynamic_argv);
+    free(dynamic_envp);
+
+    // From this point on, the existing process is destroyed; failure is not acceptable
+
+    // Copy vectors buffer to user stack
+    const uintptr_t vectors_buffer_base = new_sp;
+    mem_memcpy_user_from_kernel(vectors_buffer_base, vectors_buffer, vectors_buffer_size);
+
+    // Free vectors buffer
+    free(vectors_buffer);
+
+    // Push envp, argv, and argc
+    tmp_ptr = vectors_buffer_base + envp_offset;
+    new_sp -= sizeof(tmp_ptr);
+    mem_memcpy_user_from_kernel(new_sp, &tmp_ptr, sizeof(tmp_ptr));
+    tmp_ptr = vectors_buffer_base + argv_offset;
+    new_sp -= sizeof(tmp_ptr);
+    mem_memcpy_user_from_kernel(new_sp, &tmp_ptr, sizeof(tmp_ptr));
+    new_sp -= sizeof(argc);
+    mem_memcpy_user_from_kernel(new_sp, &argc, sizeof(argc));
+
     // Copy binary to run location
     int exec_fd = sys_open(pathname, 0);
     if (exec_fd < 0) {
         return -1;
     }
+    // TODO: Check that binary and stack don't overlap
     sys_read(exec_fd, 0x1000, 0xE000);
     sys_close(exec_fd);
 
-    // Setup the user-space stack
-    uintptr_t tmp_ptr = 0x0000; // Returning from init is currently an error, reset system
-    dma_memcpy(pa_from_pfn(CBR) + 0xEFFE, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
+    // Address to start execution
     tmp_ptr = 0x1000;
-    dma_memcpy(pa_from_pfn(CBR) + 0xEFFC, pa_from_pfn(CBR) + (uintptr_t) &tmp_ptr, 2);
-    syscall_sp = 0xEFFC;
+    new_sp -= sizeof(tmp_ptr);
+    mem_memcpy_user_from_kernel(new_sp, &tmp_ptr, sizeof(tmp_ptr));
+
+    syscall_sp = new_sp;
+
+    return 0;
 }

@@ -3,6 +3,8 @@
 #include <cpu.h>
 #include <intrinsic.h>
 #include <string.h>
+ 
+#pragma portmode z180
 
 #define PAGE_COUNT 256U
 #define PAGES_PER_BLOCK 16U
@@ -98,9 +100,9 @@ USER_PTR(void) mem_memcpy_user_from_kstack(USER_PTR(void) dest, const void *src,
 }
 
 USER_PTR(void) mem_memcpy_user_from_kernel(USER_PTR(void) dest, const void *src, size_t count) {
-    if (dest >= 0xF000) {
+    if ((uintptr_t) src >= 0xF000) {
         return mem_memcpy_user_from_kstack(dest, src, count);
-    } else if (dest >= 0x1000) {
+    } else if ((uintptr_t) src >= 0x1000) {
         return mem_memcpy_user_from_kdata(dest, src, count);
     } else {
         return mem_memcpy_user_from_kconst(dest, src, count);
@@ -118,9 +120,9 @@ void *mem_memcpy_kstack_from_user(void *dest, USER_PTR(const void) src, size_t c
 }
 
 void *mem_memcpy_kernel_from_user(void *dest, USER_PTR(const void) src, size_t count) {
-    if (dest >= (void *) 0xF000) {
+    if ((uintptr_t) dest >= 0xF000) {
         return mem_memcpy_kstack_from_user(dest, src, count);
-    } else if (dest >= (void *) 0x1000) {
+    } else if ((uintptr_t) dest >= 0x1000) {
         return mem_memcpy_kdata_from_user(dest, src, count);
     } else {
         return dest;
@@ -168,7 +170,11 @@ void *mem_copy_from_user_buffer(USER_PTR(void) user_ptr, size_t count) {
     return user_buffer;
 }
 
-ssize_t mem_strlen(USER_PTR(const char) user_ptr) {
+int mem_user_strlen(USER_PTR(const char) user_ptr) {
+    if (!mem_user_valid_ptr(user_ptr)) {
+        return -1;
+    }
+
     mem_copy_to_user_buffer(user_ptr, MEM_USER_BUFFER_SIZE);
 
     size_t len = strnlen(user_buffer, MEM_USER_BUFFER_SIZE);
@@ -180,13 +186,22 @@ ssize_t mem_strlen(USER_PTR(const char) user_ptr) {
     }
 }
 
-ssize_t mem_vector_len(USER_PTR(void *) user_vector) {
-    void **copied_vector = mem_copy_to_user_buffer(user_vector, MEM_USER_BUFFER_SIZE);
+int mem_user_vector_len(USER_PTR(USER_PTR(void)) user_vector) {
+    // Chack that front of list is in valid space
+    if (!mem_user_valid_ptr(user_vector)) {
+        return -1;
+    }
+
+    USER_PTR(void) *copied_vector = mem_copy_to_user_buffer(user_vector, MEM_USER_BUFFER_SIZE);
 
     unsigned int null_index = 0;
     bool found_null = false;
     const unsigned int max_pointers = MEM_USER_BUFFER_SIZE / sizeof(char *);
     while (null_index < max_pointers) {
+        // Chack that back of this pointer is in valid space
+        if (!mem_user_valid_ptr((uintptr_t) user_vector + (null_index + 1) * sizeof(USER_PTR(void)) - 1)) {
+            return -1;
+        }
         if (!copied_vector[null_index]) {
             found_null = true;
             break;
@@ -199,4 +214,8 @@ ssize_t mem_vector_len(USER_PTR(void *) user_vector) {
     } else {
         return null_index;
     }
+}
+
+bool mem_user_valid_ptr(USER_PTR(void) ptr) {
+    return (ptr >= 0x1000) && (ptr < 0xF000);
 }

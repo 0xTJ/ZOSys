@@ -30,6 +30,10 @@ extern struct module dev_sd_module;
 extern struct module fs_dev_module;
 extern struct module fs_initrd_module;
 
+char init_path[] = "Y:init";
+char *argv[] = { "init", NULL };
+char *envp[] = { "PATH=\"Y:\"", NULL };
+
 int main(void) {
     CMR = __IO_CMR_X2;
 
@@ -62,9 +66,10 @@ int main(void) {
     kio_puts("Starting init process\n");
     pid_t pid = sys_fork();
     if(pid == 0) {
+
         // Copy init binary to run location
-        // This only work because "Y:init" is also copied to user space on fork
-        sys_execve((uintptr_t) "Y:init", (uintptr_t) NULL, (uintptr_t) NULL);
+        // This only work because parameters is also copied to user space on fork
+        sys_execve((uintptr_t) init_path, (uintptr_t) argv, (uintptr_t) envp);
 
         syscall_leave();
         while (1)

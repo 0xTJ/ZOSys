@@ -1,6 +1,7 @@
 #ifndef INCLUDE_MEM_H
 #define INCLUDE_MEM_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -36,7 +37,8 @@ USER_PTR(void) mem_memcpy_user_from_user(USER_PTR(void) dest, USER_PTR(const voi
 void *mem_get_user_buffer(void);
 void *mem_copy_to_user_buffer(USER_PTR(void) user_ptr, size_t count);
 void *mem_copy_from_user_buffer(USER_PTR(void) user_ptr, size_t count);
-ssize_t mem_strlen(USER_PTR(const char) user_ptr);  // Clobbers user buffer, returns -1 if the string is longer than MEM_USER_BUFFER_SIZE - 1
-ssize_t mem_vector_len(USER_PTR(void *) user_vector);   // Clobbers user buffer, return -1 if the vector table or any string is too long
+int mem_user_strlen(USER_PTR(const char) user_ptr);  // Clobbers user buffer, returns -1 if the string is longer than MEM_USER_BUFFER_SIZE - 1
+int mem_user_vector_len(USER_PTR(USER_PTR(void)) user_vector);   // Clobbers user buffer, return -1 if the vector table or any string is too long
+bool mem_user_valid_ptr(USER_PTR(void) ptr);
 
 #endif
