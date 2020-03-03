@@ -41,13 +41,14 @@ int main(void) {
     if (mem_alloc_page_block_specific(CBR) < 0)
         while (1)
             ;
-
-    module_init(&dev_asci_module);
+            
     dma_0_init();
-    module_init(&fs_dev_module);
-    module_init(&fs_initrd_module);
     io_system_init();
     spi_init();
+
+    module_init(&dev_asci_module);
+    module_init(&fs_dev_module);
+    module_init(&fs_initrd_module);
     module_init(&dev_sd_module);
 
     // Create process information structures
@@ -87,15 +88,23 @@ int main(void) {
     return 0;
 }
 
-void trap(uintptr_t pc) {
-    bool byte_3 = ITC & __IO_ITC_UFO;
+void trap(uint16_t trap_cbar, uintptr_t trap_pc, uint16_t trap_itc) {
+    bool byte_3 = trap_itc & __IO_ITC_UFO;
     ITC &= ~__IO_ITC_TRAP;
-    uintptr_t op_pc = pc - (byte_3 ? 2 : 1);
+    uintptr_t op_pc = trap_pc - (byte_3 ? 2 : 1);
+
     bool in_kernel = false;
-    if (trap_cbar == 0xF1) {
-        // Kernel space
+    if (trap_cbar == CBAR) {
         in_kernel = true;
     }
+
+    unsigned char opcode[3];
+    if (in_kernel) {
+        memmove(opcode, (void *) op_pc, 3);
+    } else {
+        mem_memcpy_kernel_from_user(opcode, op_pc, 3);
+    }
+
     kio_puts("Undefined Op Code fetch caused by ");
     kio_puts(in_kernel ? "kernel" : "user");
     kio_puts(" in PID ");
@@ -103,24 +112,18 @@ void trap(uintptr_t pc) {
     kio_puts(" at address ");
     kio_put_ui(op_pc);
     kio_puts(": ");
-    kio_put_uc(cpu_bpeek(op_pc));
+    kio_put_uc(opcode[0]);
     kio_putc(' ');
-    if (!byte_3)
-        kio_putc('*');
-    kio_put_uc(cpu_bpeek(op_pc + 1));
-    if (!byte_3)
-        kio_putc('*');
-    kio_putc(' ');
-    if (!byte_3)
-        kio_putc('(');
-    else
-        kio_putc('*');
-    kio_put_uc(cpu_bpeek(op_pc + 2));
-    if (!byte_3)
-        kio_putc(')');
-    else
-        kio_putc('*');
-    kio_putc('\n');
+    if (!byte_3) {
+        kio_put_uc(opcode[1]);
+        kio_putc('\n');
+    } else {
+        kio_put_uc(opcode[1]);
+        kio_putc(' ');
+        kio_put_uc(opcode[2]);
+        kio_putc('\n');
+    }
+
     if (in_kernel) {
         // panic();
         // TODO: Add panic()

@@ -152,13 +152,23 @@ interupt_leave:
     ret
 
 
+; TODO: Get UFO ASAP, before another process can TRAP and change it
 PUBLIC trap
 trap:
-    in0 a, (CBAR)
-    ld (_trap_cbar), a
+    in0 l, (ITC)
+    ld h, 0
+    pop de
+    ld sp, trap_stack_tail
+    push hl ; Push ITC
+    push de ; Push TRAP PC
+    in0 l, (CBAR)
+    ld h, 0
+    push hl ; Push CBAR
     ld a, 0xF1
     out0 (CBAR), a
     call _trap
+trap_loop:
+    jmp trap_loop
 
 EXTERN _int_0
 int_0:
@@ -251,10 +261,6 @@ int_no_vector:
 
 SECTION user_tmp
 
-PUBLIC _trap_cbar
-_trap_cbar:
-    DEFB 0
-
 interrupt_sp:
     DEFW 0
 
@@ -264,3 +270,7 @@ interrupt_cbar:
 interrupt_stack:
     DEFS 0x200
 interrupt_stack_tail:
+
+trap_stack:
+    DEFS 0x40
+trap_stack_tail:
