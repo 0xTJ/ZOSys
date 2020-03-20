@@ -6,25 +6,24 @@ SRCDIR = src
 DEPDIR = dep
 OBJDIR = obj
 
-SRCS_C = $(wildcard $(SRCDIR)/*.c)
-SRCS_ASM = $(SRCDIR)/crt.s $(filter-out $(SRCDIR)/crt.s,$(wildcard $(SRCDIR)/*.s))
+SRCS_C = $(wildcard $(SRCDIR)/*.c) $(wildcard $(SRCDIR)/**/*.c)
+SRCS_ASM = $(wildcard $(SRCDIR)/*.s) $(wildcard $(SRCDIR)/**/*.s)
 DEPS := $(SRCS_C:$(SRCDIR)/%.c=$(DEPDIR)/%.d)
 OBJS = $(SRCS_ASM:$(SRCDIR)/%.s=$(OBJDIR)/%.o) $(SRCS_C:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
 DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
 CPPFLAGS += $(DEPFLAGS) -Iinclude
-CFLAGS += --list -SO3 -clib=sdcc_iy -isystem../clib/include #--max-allocs-per-node200000
-LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy -L../clib -lclib
+CFLAGS += --list -SO3 -clib=sdcc_iy #--max-allocs-per-node200000
+LDFLAGS += -x
 
-TARGET = init
+TARGET = clib
 
 .PHONY: all clean
 
-all: $(TARGET).bin
+all: $(TARGET).lib
 
-$(TARGET).bin: $(OBJS)
+$(TARGET).lib: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
-	$(RM) ../$(OBJDIR)/initrd.o
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	mkdir -p $(dir $@) $(dir $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d))
@@ -33,8 +32,6 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 $(OBJDIR)/%.o: $(SRCDIR)/%.s
 	mkdir -p $(dir $@)
 	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
-
-$(DEPS):
 
 include $(wildcard $(DEPS))
 

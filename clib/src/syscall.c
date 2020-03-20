@@ -1,11 +1,9 @@
-#include "syscall.h"
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 pid_t fork(void) __naked {
     __asm__("ld a, 0\nrst 8\nret");
-}
-
-pid_t wait(int *wstatus) {
-    return waitpid(-1, wstatus, 0);
 }
 
 pid_t waitpid(pid_t pid, int *wstatus, int options) __naked {
@@ -28,12 +26,12 @@ int close(int fd) __naked {
     (void) fd;
 }
 
-ssize_t read(int fd, char *buf, size_t count) __naked {
+ssize_t read(int fd, void *buf, size_t count) __naked {
     __asm__("ld a, 5\nrst 8\nret");
     (void) fd, (void) buf, (void) count;
 }
 
-ssize_t write(int fd, const char *buf, size_t count) __naked {
+ssize_t write(int fd, const void *buf, size_t count) __naked {
     __asm__("ld a, 6\nrst 8\nret");
     (void) fd, (void) buf, (void) count;
 }

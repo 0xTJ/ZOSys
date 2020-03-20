@@ -1,8 +1,9 @@
-#include "syscall.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 
 void shell(void);
 
@@ -11,9 +12,9 @@ int stdout_fd;
 int stderr_fd;
 
 int main(int argc, char **argv, char **envp) {
-    stdin_fd = open("Z:asci0", 0);
-    stdout_fd = open("Z:asci0", 0);
-    stderr_fd = open("Z:asci0", 0);
+    stdin_fd = open("Z:asci0", O_RDONLY);
+    stdout_fd = open("Z:asci0", O_WRONLY);
+    stderr_fd = open("Z:asci0", O_WRONLY);
 
     const char *start_message = "Init has started\n";
     write(stdout_fd, start_message, strlen(start_message));

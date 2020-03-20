@@ -1,28 +1,23 @@
-#include "syscall.h"
 #include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
-
-void shell(void);
-
-int stdin_fd;
-int stdout_fd;
-int stderr_fd;
+#include <sys/wait.h>
 
 int main(int argc, char **argv, char **envp) {
     const char prompt[] = "> ";
-    write(stdout_fd, prompt, strlen(prompt));
+    write(STDOUT_FILENO, prompt, strlen(prompt));
 
     while (1) {
         char tmp;
-        if (read(stdin_fd, &tmp, 1) > 0) {
+        if (read(STDIN_FILENO, &tmp, 1) > 0) {
             if (tmp == 'x') {
                 const char *exit_message = "\nExiting\n";
-                write(stdout_fd, exit_message, strlen(exit_message));
-                return 0;
+                write(STDOUT_FILENO, exit_message, strlen(exit_message));
+                _exit(0);
             }
-            write(stdout_fd, &tmp, 1);
+            write(STDOUT_FILENO, &tmp, 1);
         }
     }
 }

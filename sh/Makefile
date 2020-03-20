@@ -13,9 +13,8 @@ OBJS = $(SRCS_ASM:$(SRCDIR)/%.s=$(OBJDIR)/%.o) $(SRCS_C:$(SRCDIR)/%.c=$(OBJDIR)/
 
 DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
 CPPFLAGS += $(DEPFLAGS) -Iinclude
-CFLAGS += --list -SO3 -clib=sdcc_iy --math32_z180 #--max-allocs-per-node200000
-LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy --math32_z180
-LDLIBS += -lm
+CFLAGS += --list -SO3 -clib=sdcc_iy -isystem../clib/include #--max-allocs-per-node200000
+LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy -L../clib -lclib
 
 TARGET = sh
 
@@ -27,18 +26,17 @@ $(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
 	$(RM) ../$(OBJDIR)/initrd.o
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	mkdir -p $(dir $@) $(dir $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d))
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.s | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.s
+	mkdir -p $(dir $@)
 	$(CC) $(ARCH) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR): ; @mkdir -p $@
-$(DEPDIR): ; @mkdir -p $@
 
 $(DEPS):
 
 include $(wildcard $(DEPS))
 
 clean:
-	$(RM) *.bin *.def $(DEPDIR)/* $(OBJDIR)/*
+	$(RM) *.lib *.bin *.def $(DEPDIR) $(OBJDIR) -r

@@ -2,8 +2,8 @@
 *.o
 *.lis
 *.map
+*.lib
 zcc_opt.def
 obj
 dep
 .vscode
-
