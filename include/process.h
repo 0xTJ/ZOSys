@@ -27,6 +27,7 @@ struct process {
     enum proc_state state;
     pid_t pid;
     pid_t ppid;
+    struct file *cwd;
     int status;
     pid_t wait_pid;
     int wait_options;

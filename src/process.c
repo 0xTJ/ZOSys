@@ -42,6 +42,7 @@ void process_init(void) {
     }
     current_proc->state = RUNNING;
     current_proc->cbr = CBR;
+    current_proc->cwd = NULL;
 }
 
 struct process *process_new(void) {
@@ -221,6 +222,8 @@ pid_t sys_fork(void) {
 
     // Setup child fields
     child_proc->ppid = parent_pid;
+    file_file_ref(current_proc->cwd);
+    child_proc->cwd = current_proc->cwd;
     if (process_clone_files(child_proc, current_proc) != 0) {
         process_destroy(child_proc);
         return -1;
@@ -325,6 +328,7 @@ void sys_exit(int status) {
 
     intrinsic_di();
 
+    file_file_unref(current_proc->cwd);
     current_proc->status = status & 0377;
     current_proc->state = ZOMBIE;
 
