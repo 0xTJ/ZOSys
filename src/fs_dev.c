@@ -27,10 +27,13 @@ void fs_dev_exit(void) {
 }
 
 struct file *fs_dev_get_file(struct mountpoint *mp, const char *pathname) {
-    (void) mp;
-
     struct file *file_ptr = NULL;
-    if (strcmp(pathname, "asci0") == 0) {
+    if (strcmp(pathname, "") == 0) {
+        file_ptr = file_file_new();
+        if (file_ptr) {
+            file_init_directory(file_ptr, mp, 0);
+        }
+    } else if (strcmp(pathname, "asci0") == 0) {
         file_ptr = file_file_new();
         if (file_ptr) {
             file_init_special(file_ptr, 1, 0);

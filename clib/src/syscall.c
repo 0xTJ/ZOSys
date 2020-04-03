@@ -41,3 +41,12 @@ int execve(const char *pathname, char *const argv[], char *const envp[]) __naked
     (void) pathname, (void) argv, (void) envp;
 }
 
+int chdir(const char *path) __naked {
+    __asm__("ld a, 8\nrst 8\nret");
+    (void) path;
+}
+
+int fchdir(int fildes) __naked {
+    __asm__("ld a, 9\nrst 8\nret");
+    (void) fildes;
+}

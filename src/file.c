@@ -2,6 +2,8 @@
 #include "device.h"
 #include "process.h"
 #include "vfs.h"
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -50,6 +52,12 @@ void file_init_special(struct file *file_ptr, int major, int minor) {
     file_ptr->special.minor = minor;
 }
 
+void file_init_directory(struct file *file_ptr, struct mountpoint *mp, ino_t inode) {
+    file_ptr->type = FILE_DIRECTORY;
+    file_ptr->directory.mp = mp;
+    file_ptr->directory.inode = inode;
+}
+
 struct open_file *file_open_file_new(void) {
     struct open_file *result = malloc(sizeof(struct open_file));
     memset(result, 0, sizeof(result));
@@ -81,11 +89,26 @@ struct file *file_open(const char *pathname, int flags) {
     struct mountpoint *mp = NULL;
     struct file *file_ptr = NULL;
     int result = -1;
+    const char *pathname_in_mount = pathname;
 
-    mp = vfs_get_mount(pathname);
+    if (pathname[0] == '\0' || pathname[1] != ':') {
+        // Relative path
+        if (current_proc->cwd) {
+            mp = current_proc->cwd->directory.mp;
+        } else {
+            // No CWD exists
+            // panic();
+            // TODO: Add panic()
+            return -1;
+        }
+    } else {
+        // Absolute path
+        mp = vfs_get_mount(pathname);
+        pathname_in_mount += 2;
+    }
 
     if (mp) {
-        file_ptr = mp->fs->get_file(mp, pathname + 2);
+        file_ptr = mp->fs->get_file(mp, pathname_in_mount);
     }
 
     if (file_ptr) {
@@ -99,6 +122,13 @@ struct file *file_open(const char *pathname, int flags) {
             break;
         case FILE_SPECIAL:
             result = device_open(file_ptr, flags);
+            break;
+        case FILE_DIRECTORY:
+            if (mp->fs->ops && mp->fs->ops->open) {
+                result = mp->fs->ops->open(file_ptr, flags);
+            } else {
+                result = 0; 
+            }
             break;
         default:
             // panic();
@@ -274,4 +304,36 @@ ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count) {
     }
 
     return done_count;
+}
+
+int sys_chdir(USER_PTR(const char) path) {
+    char *pathname_copied = mem_copy_to_user_buffer(path, MEM_USER_BUFFER_SIZE);
+    pathname_copied[MEM_USER_BUFFER_SIZE] = '\0';
+
+    struct file *opened_dir = file_open(pathname_copied, O_RDONLY);
+    if (!opened_dir || opened_dir->type != FILE_DIRECTORY) {
+        file_file_unref(opened_dir);
+        return -1;
+    }
+
+    file_file_unref(current_proc->cwd);
+    current_proc->cwd = opened_dir;
+
+    return 0;
+}
+
+int sys_fchdir(int fildes) {
+    if (fildes < 0 || fildes >= MAX_OPEN_FILES)
+        return -1;
+
+    struct open_file *opened_dir = current_proc->open_files[fildes];
+    if (!opened_dir || opened_dir->file->type != FILE_DIRECTORY) {
+        return -1;
+    }
+
+    file_file_unref(current_proc->cwd);
+    file_file_ref(opened_dir->file);
+    current_proc->cwd = opened_dir->file;
+
+    return 0;
 }

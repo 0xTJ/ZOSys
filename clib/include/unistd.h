@@ -56,11 +56,13 @@ typedef signed int pid_t;
 typedef signed int intptr_t;
 #endif
 
+int chdir(const char *path);
 int close(int fd);
 int dup(int oldfd);
 int dup2(int oldfd, int newfd);
 int execve(const char *pathname, char *const argv[], char *const envp[]);
 void _exit(int status);
+int fchdir(int fildes);
 pid_t fork(void);
 off_t lseek(int fd, void *buf, size_t count);
 ssize_t read(int fd, void *buf, size_t count);

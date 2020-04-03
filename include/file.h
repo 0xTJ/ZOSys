@@ -10,6 +10,7 @@
 enum file_type {
     FILE_PLAIN,
     FILE_SPECIAL,
+    FILE_DIRECTORY,
 };
 
 struct file {
@@ -24,6 +25,10 @@ struct file {
             int major : 8;
             int minor : 8;
         } special;
+        struct {
+            struct mountpoint *mp;
+            ino_t inode;
+        } directory;
     };
 };
 
@@ -51,6 +56,7 @@ void file_file_unref(struct file *ptr);
 
 void file_init_plain(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
 void file_init_special(struct file *file_ptr, int major, int minor);
+void file_init_directory(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
 
 struct open_file *file_open_file_new(void);
 struct open_file *file_open_file_clone(struct open_file *src);
