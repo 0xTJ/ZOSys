@@ -365,12 +365,6 @@ void sys_exit(int status) {
     // panic();    // Should never return to here
 }
 
-// ssize_t user_string_vector_space(USER_PTR(USER_PTR(char) const) vect) {
-
-
-//     size_t argv_table_size = (argc + 1) * sizeof(char *);
-// }
-
 int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) argv, USER_PTR(USER_PTR(char) const) envp) {
     uintptr_t new_sp = 0xF000;
 

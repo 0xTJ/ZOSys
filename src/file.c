@@ -192,6 +192,9 @@ int sys_open(USER_PTR(char) pathname, int flags) {
 }
 
 int sys_close(int fd) {
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        return -1;
+
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
