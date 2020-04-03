@@ -26,12 +26,14 @@ extern uintptr_t syscall_sp;
 extern unsigned char trap_cbar;
 
 extern struct module dev_asci_module;
+extern struct module dev_sermem_module;
 extern struct module dev_sd_module;
 extern struct module fs_dev_module;
 extern struct module fs_initrd_module;
 
-char init_path[] = "Y:init";
-char *argv[] = { "init", NULL };
+char boot_disk[] = "Y:";
+char init_name[] = "init";
+char *argv[] = { init_name, NULL };
 char *envp[] = { "PATH=\"Y:\"", NULL };
 
 int main(void) {
@@ -47,6 +49,7 @@ int main(void) {
     spi_init();
 
     module_init(&dev_asci_module);
+    module_init(&dev_sermem_module);
     module_init(&fs_dev_module);
     module_init(&fs_initrd_module);
     module_init(&dev_sd_module);
@@ -67,10 +70,13 @@ int main(void) {
     kio_puts("Starting init process\n");
     pid_t pid = sys_fork();
     if(pid == 0) {
+        // This only work because variables of kernel are also copied to user space on fork
+
+        // Switch to designated boot drive
+        sys_chdir((uintptr_t) boot_disk);
 
         // Copy init binary to run location
-        // This only work because parameters is also copied to user space on fork
-        sys_execve((uintptr_t) init_path, (uintptr_t) argv, (uintptr_t) envp);
+        sys_execve((uintptr_t) init_name, (uintptr_t) argv, (uintptr_t) envp);
 
         syscall_leave();
         while (1)

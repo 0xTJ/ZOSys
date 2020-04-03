@@ -14,7 +14,7 @@ struct filesystem {
     struct file_ops *ops;
 };
 
-int vfs_mount(struct filesystem *fs, struct file *backing, char mountpoint);
+struct mountpoint *vfs_mount(struct filesystem *fs, struct file *backing, char mountpoint);
 void vfs_unmount(char mountpoint);
 struct mountpoint *vfs_get_mount(const char *pathname);
 

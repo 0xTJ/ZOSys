@@ -58,7 +58,7 @@ int dev_asci_init(void) {
     asci_0_init();
     asci_1_init();
 
-    device_register_driver(0, &asci_driver);
+    device_register_driver(1, &asci_driver);
 
     return 0;
 }

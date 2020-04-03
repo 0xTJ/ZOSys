@@ -24,6 +24,7 @@ struct file {
         struct {
             int major : 8;
             int minor : 8;
+            struct file *backing;
         } special;
         struct {
             struct mountpoint *mp;
@@ -55,7 +56,7 @@ void file_file_ref(struct file *ptr);
 void file_file_unref(struct file *ptr);
 
 void file_init_plain(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
-void file_init_special(struct file *file_ptr, int major, int minor);
+void file_init_special(struct file *file_ptr, int major, int minor, struct file *backing);
 void file_init_directory(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
 
 struct open_file *file_open_file_new(void);
@@ -71,5 +72,8 @@ int sys_open(USER_PTR(char) pathname, int flags);
 int sys_close(int fd);
 ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count);
 ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count);
+
+int sys_chdir(USER_PTR(const char) path);
+int sys_fchdir(int fildes);
 
 #endif

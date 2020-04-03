@@ -5,16 +5,16 @@
 
 volatile struct mountpoint mountpoints['Z' - 'A' + 1] = {{0}};
 
-int vfs_mount(struct filesystem *fs, struct file *backing, char mountdrive) __critical {
+struct mountpoint *vfs_mount(struct filesystem *fs, struct file *backing, char mountdrive) __critical {
     if (!isalpha(mountdrive))
-        return -1;
+        return NULL;
 
     if (islower(mountdrive))
         mountdrive = toupper(mountdrive);
     uint8_t fs_num = mountdrive - 'A';
 
     if (mountpoints[fs_num].fs)
-        return -1;
+        return NULL;
 
     if (backing) {
         file_file_ref(backing);
@@ -23,7 +23,7 @@ int vfs_mount(struct filesystem *fs, struct file *backing, char mountdrive) __cr
     mountpoints[fs_num].fs = fs;
     mountpoints[fs_num].backing = backing;
 
-    return mountdrive;
+    return &mountpoints[fs_num];
 }
 
 void vfs_unmount(char mountdrive) __critical {

@@ -27,7 +27,11 @@ struct filesystem fs_initrd = {
 };
 
 int fs_initrd_init(void) {
-    return vfs_mount(&fs_initrd, NULL, 'Y');
+    struct mountpoint *mp = vfs_mount(&fs_initrd, NULL, 'Y');
+    if (!mp) {
+        return -1;
+    }
+    return 0;
 }
 
 void fs_initrd_exit(void) {
@@ -40,7 +44,12 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
 
     struct file *file_ptr = NULL;
 
-    if (strcmp(pathname, "init") == 0) {
+    if (strcmp(pathname, "") == 0) {
+        file_ptr = file_file_new();
+        if (file_ptr) {
+            file_init_directory(file_ptr, mp, 0);
+        }
+    } else if (strcmp(pathname, "init") == 0) {
         file_ptr = file_file_new();
         if (file_ptr) {
             file_init_plain(file_ptr, mp, 1);

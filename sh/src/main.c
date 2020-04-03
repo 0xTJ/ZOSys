@@ -17,7 +17,7 @@ int main(int argc, char **argv, char **envp) {
                 write(STDOUT_FILENO, exit_message, strlen(exit_message));
                 _exit(0);
             }
-            write(STDOUT_FILENO, &tmp, 1);
+            write(STDERR_FILENO, &tmp, 1);
         }
     }
 }

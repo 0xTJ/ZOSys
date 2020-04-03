@@ -46,10 +46,14 @@ void file_init_plain(struct file *file_ptr, struct mountpoint *mp, ino_t inode) 
     file_ptr->plain.inode = inode;
 }
 
-void file_init_special(struct file *file_ptr, int major, int minor) {
+void file_init_special(struct file *file_ptr, int major, int minor, struct file *backing) {
     file_ptr->type = FILE_SPECIAL;
     file_ptr->special.major = major;
     file_ptr->special.minor = minor;
+    if (backing) {
+        file_file_ref(backing);
+    }
+    file_ptr->special.backing = backing;
 }
 
 void file_init_directory(struct file *file_ptr, struct mountpoint *mp, ino_t inode) {
@@ -99,7 +103,7 @@ struct file *file_open(const char *pathname, int flags) {
             // No CWD exists
             // panic();
             // TODO: Add panic()
-            return -1;
+            return NULL;
         }
     } else {
         // Absolute path
