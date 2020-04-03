@@ -38,6 +38,11 @@ struct file *fs_dev_get_file(struct mountpoint *mp, const char *pathname) {
         if (file_ptr) {
             file_init_special(file_ptr, 1, 0);
         }
+    } else if (strcmp(pathname, "asci1") == 0) {
+        file_ptr = file_file_new();
+        if (file_ptr) {
+            file_init_special(file_ptr, 1, 1);
+        }
     }
     return file_ptr;
 }
