@@ -18,7 +18,7 @@ void semaphore_wait(semaphore_t *smphr) __critical {
 }
 
 bool semaphore_trywait(semaphore_t *smphr) __critical {
-    if (smphr->count == 0) {
+    if (smphr->count <= 0) {
         return false;
     }
 

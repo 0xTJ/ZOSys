@@ -1,3 +1,4 @@
+#include "block_buf.h"
 #include "module.h"
 #include "device.h"
 #include "spi.h"
@@ -372,6 +373,8 @@ int dev_sd_init(void) {
 done:
     mutex_unlock(&spi_mtx);
 
+    device_register_driver(3, &sd_driver);
+
     return result;
 }
 
@@ -380,40 +383,100 @@ void dev_sd_exit(void) {
     return;
 }
 
+// TODO: Do error checking
 ssize_t sd_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
+    if (file_ptr->special.minor != 0) {
+        return -1;
+    }
+
     ssize_t result = 0;
     uint8_t token = 0xFF;
-    
-    // TODO: Re-implement
+    size_t count_done = 0;
 
-    // while (block_count) {
-    //     sd_read_single_block(pos, buf, &token);
+    while (count > 0) {
+        // Set bytes_to_do to have a partial or whole block
+        size_t bytes_to_do = SD_BLOCK_LEN;
+        unsigned long pos_in_block = pos % SD_BLOCK_LEN;
+        if (pos_in_block != 0) {
+            bytes_to_do = SD_BLOCK_LEN - pos_in_block;
+        }
+        if (count < bytes_to_do) {
+            bytes_to_do = count;
+        }
 
-    //     pos += SD_BLOCK_LEN;
-    //     buf += SD_BLOCK_LEN;
-    //     result += SD_BLOCK_LEN;
+        char *block_buffer;
+        if (bytes_to_do < SD_BLOCK_LEN) {
+            #if SD_BLOCK_LEN != 512
+                #error "SD hardcoded to use 512 as block size"
+            #endif
+            block_buffer = block_512_alloc();
+        } else {
+            block_buffer = buf;
+        }
 
-    //     block_count -= 1;
-    // }
+        sd_read_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, block_buffer, &token);
+
+        if (bytes_to_do < SD_BLOCK_LEN) {
+            memcpy(buf, &block_buffer[pos_in_block], bytes_to_do);
+            block_512_free(block_buffer);
+        }
+
+        pos += bytes_to_do;
+        buf += bytes_to_do;
+        result += bytes_to_do;
+        count -= bytes_to_do;
+    }
 
     return result;
 }
 
+// TODO: Do error checking
 ssize_t sd_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
+    if (file_ptr->special.minor != 0) {
+        return -1;
+    }
+
     ssize_t result = 0;
     uint8_t token = 0xFF;
-    
-    // TODO: Re-implement
+    size_t count_done = 0;
 
-    // while (block_count) {
-    //     sd_write_single_block(pos, buf, &token);
+    while (count > 0) {
+        // Set bytes_to_do to have a partial or whole block
+        size_t bytes_to_do = SD_BLOCK_LEN;
+        unsigned long pos_in_block = pos % SD_BLOCK_LEN;
+        if (pos_in_block != 0) {
+            bytes_to_do = SD_BLOCK_LEN - pos_in_block;
+        }
+        if (count < bytes_to_do) {
+            bytes_to_do = count;
+        }
 
-    //     pos += SD_BLOCK_LEN;
-    //     buf += SD_BLOCK_LEN;
-    //     result += SD_BLOCK_LEN;
+        char *block_buffer;
+        if (bytes_to_do < SD_BLOCK_LEN) {
+            #if SD_BLOCK_LEN != 512
+                #error "SD hardcoded to use 512 as block size"
+            #endif
+            block_buffer = block_512_alloc();
+            sd_read_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, block_buffer, &token);
+        } else {
+            block_buffer = buf;
+        }
 
-    //     block_count -= 1;
-    // }
+        if (bytes_to_do < SD_BLOCK_LEN) {
+            memcpy(&block_buffer[pos_in_block], buf, bytes_to_do);
+        }
+
+        sd_write_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, block_buffer, &token);
+
+        if (bytes_to_do < SD_BLOCK_LEN) {
+            block_512_free(block_buffer);
+        }
+
+        pos += bytes_to_do;
+        buf += bytes_to_do;
+        result += bytes_to_do;
+        count -= bytes_to_do;
+    }
 
     return result;
 }

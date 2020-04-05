@@ -25,6 +25,7 @@ extern uintptr_t syscall_sp;
 
 extern unsigned char trap_cbar;
 
+extern struct module block_buf_module;
 extern struct module dev_asci_module;
 extern struct module dev_sermem_module;
 extern struct module dev_sd_module;
@@ -48,6 +49,7 @@ int main(void) {
     io_system_init();
     spi_init();
 
+    module_init(&block_buf_module);
     module_init(&dev_asci_module);
     module_init(&dev_sermem_module);
     module_init(&fs_dev_module);
