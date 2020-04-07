@@ -18,9 +18,13 @@ struct module fs_dev_module = {
     fs_dev_exit
 };
 
+struct file_ops fs_dev_ops = {
+    .readdirent = fs_dev_readdirent
+};
+
 struct filesystem fs_dev = {
     fs_dev_get_file,
-    NULL
+    &fs_dev_ops
 };
 
 int fs_dev_init(void) {
@@ -63,7 +67,10 @@ void fs_dev_exit(void) {
 }
 
 struct file *fs_dev_get_file(struct mountpoint *mp, const char *pathname) {
+    (void) mp;
+
     struct file *file_ptr = NULL;
+
     if (strcmp(pathname, "") == 0) {
         file_ptr = fs_dev_root_file;
     } else if (strcmp(pathname, "asci0") == 0) {
@@ -75,5 +82,33 @@ struct file *fs_dev_get_file(struct mountpoint *mp, const char *pathname) {
     } else if (strcmp(pathname, "sd0") == 0) {
         file_ptr = fs_dev_sd0_file;
     }
+
     return file_ptr;
+}
+
+int fs_dev_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int count) {
+    if (file_ptr != fs_dev_root_file) {
+        return -1;
+    }
+
+    switch (count) {
+    case 0:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "asci0");
+        return 1;
+    case 1:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "asci1");
+        return 1;
+    case 2:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "sermem0");
+        return 1;
+    case 3:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "sd0");
+        return 0;
+    default:
+        return -1;
+    }
 }

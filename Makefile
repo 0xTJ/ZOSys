@@ -8,6 +8,7 @@ OBJDIR = obj
 CLIBDIR = clib
 INITDIR = init
 SHDIR = sh
+LSDIR = ls
 
 SRCS_C = $(wildcard $(SRCDIR)/*.c)
 SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)/*.s))
@@ -16,14 +17,14 @@ OBJS = $(SRCS_ASM:$(SRCDIR)/%.s=$(OBJDIR)/%.o) $(SRCS_C:$(SRCDIR)/%.c=$(OBJDIR)/
 
 DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
 CPPFLAGS += $(DEPFLAGS) -Iinclude
-CFLAGS += --list -SO3 -clib=sdcc_iy #--max-allocs-per-node200000
+CFLAGS += --list -SO3 -clib=sdcc_iy -isystemclib/include #--max-allocs-per-node200000
 LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy
 
 TARGET = zosys
 
-.PHONY: all clean clib init sh
+.PHONY: all clean clib init sh ls
 
-all: clib init sh $(TARGET).bin
+all: clib init sh ls $(TARGET).bin
 
 $(TARGET).bin: $(OBJS)
 	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
@@ -39,6 +40,9 @@ init: clib
 
 sh: clib
 	$(MAKE) -C $(SHDIR)
+
+ls: clib
+	$(MAKE) -C $(LSDIR)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	mkdir -p $(dir $@) $(dir $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d))
@@ -57,3 +61,4 @@ clean:
 	$(MAKE) -C $(CLIBDIR) clean
 	$(MAKE) -C $(INITDIR) clean
 	$(MAKE) -C $(SHDIR) clean
+	$(MAKE) -C $(LSDIR) clean

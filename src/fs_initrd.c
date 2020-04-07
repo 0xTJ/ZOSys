@@ -7,10 +7,17 @@ extern char initrd_init_start[];
 extern char initrd_init_end[];
 extern char initrd_sh_start[];
 extern char initrd_sh_end[];
+extern char initrd_ls_start[];
+extern char initrd_ls_end[];
 
 int fs_initrd_init(void);
 void fs_initrd_exit(void);
 struct file *fs_initrd_get_file(struct mountpoint *, const char *);
+
+struct file *fs_initrd_root_file;
+struct file *fs_initrd_init_file;
+struct file *fs_initrd_sh_file;
+struct file *fs_initrd_ls_file;
 
 struct module fs_initrd_module = {
     fs_initrd_init,
@@ -18,7 +25,8 @@ struct module fs_initrd_module = {
 };
 
 struct file_ops fs_initrd_ops = {
-    .read = fs_initrd_read
+    .read = fs_initrd_read,
+    .readdirent = fs_initrd_readdirent
 };
 
 struct filesystem fs_initrd = {
@@ -31,6 +39,27 @@ int fs_initrd_init(void) {
     if (!mp) {
         return -1;
     }
+
+    fs_initrd_root_file = file_file_new();
+    if (fs_initrd_root_file) {
+        file_init_directory(fs_initrd_root_file, mp, 0);
+    }
+
+    fs_initrd_init_file = file_file_new();
+    if (fs_initrd_init_file) {
+        file_init_plain(fs_initrd_init_file, mp, 1);
+    }
+    
+    fs_initrd_sh_file = file_file_new();
+    if (fs_initrd_sh_file) {
+        file_init_plain(fs_initrd_sh_file, mp, 2);
+    }
+    
+    fs_initrd_ls_file = file_file_new();
+    if (fs_initrd_ls_file) {
+        file_init_plain(fs_initrd_ls_file, mp, 3);
+    }
+
     return 0;
 }
 
@@ -45,20 +74,13 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
     struct file *file_ptr = NULL;
 
     if (strcmp(pathname, "") == 0) {
-        file_ptr = file_file_new();
-        if (file_ptr) {
-            file_init_directory(file_ptr, mp, 0);
-        }
+        file_ptr = fs_initrd_root_file;
     } else if (strcmp(pathname, "init") == 0) {
-        file_ptr = file_file_new();
-        if (file_ptr) {
-            file_init_plain(file_ptr, mp, 1);
-        }
+        file_ptr = fs_initrd_init_file;
     } else if (strcmp(pathname, "sh") == 0) {
-        file_ptr = file_file_new();
-        if (file_ptr) {
-            file_init_plain(file_ptr, mp, 2);
-        }
+        file_ptr = fs_initrd_sh_file;
+    } else if (strcmp(pathname, "ls") == 0) {
+        file_ptr = fs_initrd_ls_file;
     }
 
     return file_ptr;
@@ -74,6 +96,9 @@ ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned 
     } else if (file_ptr->plain.inode == 2) {
         start = initrd_sh_start;
         end = initrd_sh_end;
+    } else if (file_ptr->plain.inode == 3) {
+        start = initrd_ls_start;
+        end = initrd_ls_end;
     }
 
     if (start && end) {
@@ -91,4 +116,27 @@ ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned 
     }
 
     return -1;
+}
+
+int fs_initrd_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int count) {
+    if (file_ptr != fs_initrd_root_file) {
+        return -1;
+    }
+
+    switch (count) {
+    case 0:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "init");
+        return 1;
+    case 1:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "sh");
+        return 1;
+    case 2:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "ls");
+        return 0;
+    default:
+        return -1;
+    }
 }

@@ -459,7 +459,7 @@ ssize_t sd_write(struct file *file_ptr, const char *buf, size_t count, unsigned 
             block_buffer = block_512_alloc();
             sd_read_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, block_buffer, &token);
         } else {
-            block_buffer = buf;
+            block_buffer = (const char *) buf;
         }
 
         if (bytes_to_do < SD_BLOCK_LEN) {

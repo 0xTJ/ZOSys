@@ -158,6 +158,8 @@ int file_close(struct file *file_ptr) {
         }
     case FILE_SPECIAL:
         return device_close(file_ptr);
+    case FILE_DIRECTORY:
+        return -1;
     default:
         // panic();
         // TODO: Add panic()
@@ -175,6 +177,8 @@ ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long 
         }
     case FILE_SPECIAL:
         return device_read(file_ptr, buf, count, pos);
+    case FILE_DIRECTORY:
+        return -1;
     default:
         // panic();
         // TODO: Add panic()
@@ -192,6 +196,26 @@ ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigne
         }
     case FILE_SPECIAL:
         return device_write(file_ptr, buf, count, pos);
+    case FILE_DIRECTORY:
+        return -1;
+    default:
+        // panic();
+        // TODO: Add panic()
+        return -1;
+    }
+}
+
+int file_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int count) {
+    switch (file_ptr->type) {
+    case FILE_DIRECTORY:
+        if (file_ptr->plain.mp->fs->ops && file_ptr->plain.mp->fs->ops->readdirent) {
+            return file_ptr->plain.mp->fs->ops->readdirent(file_ptr, dirp, count);
+        } else {
+            return -1; 
+        }
+    case FILE_PLAIN:
+    case FILE_SPECIAL:
+        return -1;
     default:
         // panic();
         // TODO: Add panic()
@@ -308,6 +332,22 @@ ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count) {
     }
 
     return done_count;
+}
+
+int sys_readdirent(unsigned int fd, USER_PTR(struct dirent) dirp, unsigned int count) {
+    struct open_file *open_file = current_proc->open_files[fd];
+    if (!open_file)
+        return -1;
+
+    // Check bounds
+    if (dirp < 0x1000 || (unsigned long) dirp + sizeof(struct dirent) > 0xF000)
+        return -1;
+        
+    char *buf_copy = mem_get_user_buffer();
+    int result = file_readdirent(open_file->file, (struct dirent *) buf_copy, count);
+    mem_copy_from_user_buffer(dirp, sizeof(struct dirent));
+
+    return result;
 }
 
 int sys_chdir(USER_PTR(const char) path) {

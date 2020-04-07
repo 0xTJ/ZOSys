@@ -50,3 +50,8 @@ int fchdir(int fildes) __naked {
     __asm__("ld a, 9\nrst 8\nret");
     (void) fildes;
 }
+
+int readdirent(unsigned int fd, struct dirent *dirp, unsigned int count) __naked {
+    __asm__("ld a, 10\nrst 8\nret");
+    (void) fd, (void) dirp, (void) count;
+}
