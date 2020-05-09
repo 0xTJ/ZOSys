@@ -1,6 +1,7 @@
 #include "block_buf.h"
 #include "module.h"
 #include "mutex.h"
+#include "panic.h"
 #include "semaphore.h"
 
 #define BLOCK_512_COUNT 1
@@ -38,8 +39,7 @@ char *block_512_alloc() {
         }
     }
 
-    // TODO: Implement panic()
-    // panic();
+    panic();
     return NULL;
 }
 
@@ -54,8 +54,7 @@ char *block_512_tryalloc() {
         }
     }
 
-    // TODO: Implement panic()
-    // panic();
+    panic();
     return NULL;
 }
 

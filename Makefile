@@ -15,9 +15,9 @@ SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)
 DEPS := $(SRCS_C:$(SRCDIR)/%.c=$(DEPDIR)/%.d)
 OBJS = $(SRCS_ASM:$(SRCDIR)/%.s=$(OBJDIR)/%.o) $(SRCS_C:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
-DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
+# DEPFLAGS = -Cp"-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d"
 CPPFLAGS += $(DEPFLAGS) -Iinclude
-CFLAGS += --list -SO3 -clib=sdcc_iy -isystemclib/include #--max-allocs-per-node200000
+CFLAGS += --list -SO3 -clib=sdcc_iy -nostdlib --no-crt -isystemclib/include -s -g -m #--max-allocs-per-node200000
 LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy
 
 TARGET = zosys
@@ -26,11 +26,17 @@ TARGET = zosys
 
 all: clib init sh ls $(TARGET).bin
 
-$(TARGET).bin: $(OBJS)
-	$(CC) $(ARCH) $(LDFLAGS) $^ $(LDLIBS) -o $@
-	dd if=/dev/zero of=$@ bs=1 count=32768
+$(TARGET).bin: $(SRCS_ASM) $(SRCS_C)
+	$(CC) $(ARCH) -s -g -m $(CPPFLAGS) $(CFLAGS) $^ $(LDLIBS) -o $@
+	dd if=/dev/zero of=$@ bs=1 count=65536
 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
+
+# $(TARGET).bin: $(OBJS)
+# 	$(CC) $(ARCH) -s -g -m $(LDFLAGS) $^ $(LDLIBS) -o $@ -bn $@
+# 	dd if=/dev/zero of=$@ bs=1 count=65536
+# 	dd if=$(TARGET)_rom_resident.bin of=$@ bs=1 seek=0
+# 	dd if=$(TARGET)_kernel.bin of=$@ bs=1 seek=4096
 
 clib:
 	$(MAKE) -C $(CLIBDIR)

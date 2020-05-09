@@ -4,8 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
-
-void shell(void);
+#include <unistd.h>
 
 int stdin_fd;
 int stdout_fd;
@@ -42,9 +41,7 @@ int main(int argc, char **argv, char **envp) {
             const char *tmp = "Failed execve\n";
             write(stdout_fd, tmp, strlen(tmp));
         }
-        // TODO: exit instead of looping
-        while (1)
-            ;
+        _exit(1);
     }
 
     while (1) {

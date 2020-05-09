@@ -2,7 +2,9 @@
 *.o
 *.lis
 *.map
+*.def
 *.lib
+*.sym
 zcc_opt.def
 obj
 dep

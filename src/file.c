@@ -1,5 +1,6 @@
 #include "file.h"
 #include "device.h"
+#include "panic.h"
 #include "process.h"
 #include "vfs.h"
 #include <errno.h>
@@ -23,16 +24,14 @@ void file_file_free(struct file *ptr) {
 
 void file_file_ref(struct file *ptr) __critical {
     if (ptr->ref_count == SIZE_MAX) {
-        // panic()
-        // TODO: Add panic
+        panic();
     }
     ptr->ref_count += 1;
 }
 
 void file_file_unref(struct file *ptr) __critical {
     if (ptr->ref_count == 0) {
-        // panic()
-        // TODO: Add panic
+        panic();
     }
     ptr->ref_count -= 1;
     if (ptr->ref_count == 0) {
@@ -101,8 +100,7 @@ struct file *file_open(const char *pathname, int flags) {
             mp = current_proc->cwd->directory.mp;
         } else {
             // No CWD exists
-            // panic();
-            // TODO: Add panic()
+            panic();
             return NULL;
         }
     } else {
@@ -135,8 +133,7 @@ struct file *file_open(const char *pathname, int flags) {
             }
             break;
         default:
-            // panic();
-            // TODO: Add panic()
+            panic();
             result = -1;
             break;
         }
@@ -161,8 +158,7 @@ int file_close(struct file *file_ptr) {
     case FILE_DIRECTORY:
         return -1;
     default:
-        // panic();
-        // TODO: Add panic()
+        panic();
         return -1;
     }
 }
@@ -180,8 +176,7 @@ ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long 
     case FILE_DIRECTORY:
         return -1;
     default:
-        // panic();
-        // TODO: Add panic()
+        panic();
         return -1;
     }
 }
@@ -199,8 +194,7 @@ ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigne
     case FILE_DIRECTORY:
         return -1;
     default:
-        // panic();
-        // TODO: Add panic()
+        panic();
         return -1;
     }
 }
@@ -217,8 +211,7 @@ int file_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int cou
     case FILE_SPECIAL:
         return -1;
     default:
-        // panic();
-        // TODO: Add panic()
+        panic();
         return -1;
     }
 }

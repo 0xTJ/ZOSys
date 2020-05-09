@@ -451,25 +451,25 @@ ssize_t sd_write(struct file *file_ptr, const char *buf, size_t count, unsigned 
             bytes_to_do = count;
         }
 
-        char *block_buffer;
+        const char *block_buffer;
         if (bytes_to_do < SD_BLOCK_LEN) {
             #if SD_BLOCK_LEN != 512
                 #error "SD hardcoded to use 512 as block size"
             #endif
             block_buffer = block_512_alloc();
-            sd_read_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, block_buffer, &token);
+            sd_read_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, (char *) block_buffer, &token);
         } else {
-            block_buffer = (const char *) buf;
+            block_buffer = buf;
         }
 
         if (bytes_to_do < SD_BLOCK_LEN) {
-            memcpy(&block_buffer[pos_in_block], buf, bytes_to_do);
+            memcpy((char *) &block_buffer[pos_in_block], buf, bytes_to_do);
         }
 
         sd_write_single_block(pos / SD_BLOCK_LEN * SD_BLOCK_LEN, block_buffer, &token);
 
         if (bytes_to_do < SD_BLOCK_LEN) {
-            block_512_free(block_buffer);
+            block_512_free((char *) block_buffer);
         }
 
         pos += bytes_to_do;

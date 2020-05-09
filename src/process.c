@@ -1,6 +1,7 @@
 #include "process.h"
 #include "context.h"
 #include "dma.h"
+#include "panic.h"
 #include "mutex.h"
 #include <arch/scz180.h>
 #include <cpu.h>
@@ -11,6 +12,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "kio.h"
 
 #pragma portmode z180
 
@@ -37,12 +40,56 @@ void process_init(void) {
 
     current_proc = process_new();
     if (!current_proc) {
-        // panic();
-        // TODO: Add panic()
+        panic();
     }
     current_proc->state = RUNNING;
     current_proc->cbr = CBR;
     current_proc->cwd = NULL;
+}
+
+extern uint8_t interrupt_sp;
+extern uintptr_t interrupt_pc_addr;
+
+void process_dump_all(void) {
+    struct created_process *this_proc_l;
+    for (this_proc_l = p_list_front(&process_list); this_proc_l; this_proc_l = p_list_next(this_proc_l)) {
+        struct process *this_proc = &this_proc_l->proc;
+
+        unsigned int stack_part[3];
+        dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) stack_part, pa_from_pfn(this_proc->cbr) + this_proc->sp, sizeof(stack_part));
+
+        kio_puts("\nAddress: ");
+        kio_put_ui((unsigned int) this_proc);
+        kio_puts("\nList Head: ");
+        kio_put_ui((unsigned int) this_proc->list.head);
+        kio_puts("\nList Tail: ");
+        kio_put_ui((unsigned int) this_proc->list.tail);
+        kio_puts("\nSP: ");
+        kio_put_ui(this_proc->sp);
+        kio_puts("\nSP[0]: ");
+        kio_put_ui(stack_part[0]);
+        kio_puts("\nSP[1]: ");
+        kio_put_ui(stack_part[1]);
+        kio_puts("\nSP[2]: ");
+        kio_put_ui(stack_part[2]);
+        kio_puts("\nCBR: ");
+        kio_put_uc(this_proc->cbr);
+        kio_puts("\nState: ");
+        kio_put_uc(this_proc->state);
+        kio_puts("\nPID: ");
+        kio_put_uc(this_proc->pid);
+        kio_puts("\nPPID: ");
+        kio_put_uc(this_proc->ppid);
+        kio_puts("\nStatus: ");
+        kio_put_uc(this_proc->status);
+        kio_puts("\nWait PID: ");
+        kio_put_uc(this_proc->wait_pid);
+        kio_puts("\nWait Options: ");
+        kio_put_ui(this_proc->wait_options);
+        kio_puts("\nWait Options: ");
+        kio_put_ui((unsigned int) this_proc->wait_process);
+        kio_puts("\n");
+    }
 }
 
 struct process *process_new(void) {
@@ -122,7 +169,7 @@ void process_switch(struct process *next_proc) __z88dk_fastcall {
         pop iy \n\
         pop ix \n\
         ");
-    io_led_output = current_proc->pid;
+    // io_led_output = current_proc->pid;
     (void) next_proc;
 }
 
@@ -142,9 +189,7 @@ void process_schedule(void) {
     if (next_proc) {
         process_switch(next_proc);
     } else {
-        // TODO: Panic, idle task is not available
-        while (1)
-            ;
+        panic();
     }
 }
 
@@ -212,10 +257,29 @@ sys_fork_child_reentry: \n\
     (void) child_cbr;
 }
 
+uintptr_t get_sp(void) __z88dk_fastcall __naked {
+    __asm__("\
+        ld hl, 0 \n\
+        add hl, sp \n\
+        ret \n\
+        ");
+}
+
+unsigned char get_cbr(void) __z88dk_fastcall __naked {
+    __asm__("\
+        in0 l, (_CBR) \n\
+        ret \n\
+        ");
+}
+
 pid_t sys_fork(void) {
+    kio_puts("Enter sys_fork()\n");
+
     struct process *child_proc = process_new();
     if (!child_proc)
         return -1;
+
+    kio_puts("Created child process\n");
 
     pid_t parent_pid = current_proc->pid;
     pid_t child_pid = child_proc->pid;
@@ -229,18 +293,40 @@ pid_t sys_fork(void) {
         return -1;
     }
 
+    kio_puts("Cloned files\n");
+
+    kio_puts("About to pa_from_pfn():\n");
+    kio_put_uc(child_proc->cbr);
+    kio_putc('\n');
+    kio_put_uc(CBR);
+    kio_putc('\n');
+    kio_put_ui(pa_from_pfn(child_proc->cbr));
+    kio_putc('\n');
+    kio_put_ui(pa_from_pfn(CBR));
+    kio_putc('\n');
+
     dma_memcpy(pa_from_pfn(child_proc->cbr), pa_from_pfn(CBR), 0);
     // Bad things may happen if anything important on the stack changes between these lines
     child_proc->sp = sys_fork_helper(child_proc->cbr);
 
+    kio_puts("After sys_fork_helper()\n");
+    kio_put_uc(current_proc->pid);
+    kio_putc('\n');
+    kio_put_ui(get_sp());
+    kio_putc('\n');
+    kio_put_uc(get_cbr());
+    kio_putc('\n');
+
     if (current_proc->pid == parent_pid) {
         // Add child to ready list
+        kio_puts("Pushing new child as ready\n");
         uint8_t int_state = cpu_get_int_state();
         intrinsic_di();
         child_proc->state = READY;
         p_list_push_back(&process_ready_list, child_proc);
         cpu_set_int_state(int_state);
 
+        kio_puts("Returning to parent\n");
         return child_pid;
     } else {
         return 0;
@@ -270,8 +356,7 @@ pid_t sys_waitpid(pid_t pid, USER_PTR(int) wstatus, int options) {
                 p_list_remove(&process_zombie_list, found_process);
                 break;
             } else {
-                // TODO: Add panic()
-                // panic();
+                panic();
             }
         }
 
@@ -351,8 +436,7 @@ void sys_exit(int status) {
                 search_proc->wait_process = current_proc;
                 p_list_remove(&process_wait_list, search_proc);
                 process_switch(search_proc);
-                // TODO: Add panic()
-                // panic();    // Should never return to here
+                panic();    // Should never return to here
             }
         }
         search_proc = p_list_next(search_proc);
@@ -361,8 +445,7 @@ void sys_exit(int status) {
     // Add to list of zombie processes and yield to other processes
     p_list_push_back(&process_zombie_list, current_proc); 
     process_schedule();
-    // TODO: Add panic()
-    // panic();    // Should never return to here
+    panic();    // Should never return to here
 }
 
 int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) argv, USER_PTR(USER_PTR(char) const) envp) {
@@ -373,6 +456,8 @@ int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) arg
     unsigned int i;
     ssize_t string_len;
 
+    kio_puts("GOT0\n");
+
     // Get number of elements in vectors
     int argc = mem_user_vector_len((USER_PTR(void *)) argv);
     int envc = mem_user_vector_len((USER_PTR(void *)) envp);
@@ -381,13 +466,19 @@ int sys_execve(USER_PTR(const char) pathname, USER_PTR(USER_PTR(char) const) arg
         return -1;
     }
 
+    kio_puts("GOT1\n");
+
     // Copy argv to a dynamic buffer
     const size_t argv_size = (argc + 1) * sizeof(USER_PTR(char) const);
     USER_PTR(char) *dynamic_argv = malloc(argv_size);
     if (!dynamic_argv) {
         return -1;
     }
+    kio_puts("GOT2\n");
+    kio_put_ui((unsigned int) dynamic_argv);
     mem_memcpy_kernel_from_user(dynamic_argv, argv, argv_size);
+
+    kio_puts("GOT3\n");
 
     // Verify argv pointers and accumulate string size
     size_t argv_strings_size = 0;

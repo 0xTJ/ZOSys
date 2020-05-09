@@ -8,6 +8,7 @@
 #include "spi.h"
 #include "ds1302.h"
 #include "module.h"
+#include "panic.h"
 #include "context.h"
 #include "vfs.h"
 #include <arch/scz180.h>
@@ -39,6 +40,7 @@ char *envp[] = { "PATH=\"Y:\"", NULL };
 
 int main(void) {
     CMR = __IO_CMR_X2;
+    // CCR |= __IO_CCR_XTAL_X2;
 
     // Reserve current page in use
     if (mem_alloc_page_block_specific(CBR) < 0)
@@ -96,9 +98,12 @@ int main(void) {
     return 0;
 }
 
-void trap(uint16_t trap_cbar, uintptr_t trap_pc, uint16_t trap_itc) {
+void trap(uint16_t trap_cbar, uintptr_t trap_pc, uint16_t trap_itc, uintptr_t trap_sp) {
     bool byte_3 = trap_itc & __IO_ITC_UFO;
     ITC &= ~__IO_ITC_TRAP;
+
+    disable_all_interrupts();
+
     uintptr_t op_pc = trap_pc - (byte_3 ? 2 : 1);
 
     bool in_kernel = false;
@@ -131,10 +136,11 @@ void trap(uint16_t trap_cbar, uintptr_t trap_pc, uint16_t trap_itc) {
         kio_put_uc(opcode[2]);
         kio_putc('\n');
     }
+    kio_put_ui(trap_sp);
+    kio_putc('\n');
 
     if (in_kernel) {
-        // panic();
-        // TODO: Add panic()
+        panic();
     } else {
         // TODO: Set the value here correctly
         sys_exit(129);

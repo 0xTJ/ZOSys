@@ -1,5 +1,5 @@
-#ifndef INCLUDE_DS1302_h
-#define INCLUDE_DS1302_h
+#ifndef INCLUDE_DS1302_H
+#define INCLUDE_DS1302_H
 
 #include <stdint.h>
 #include <time.h>

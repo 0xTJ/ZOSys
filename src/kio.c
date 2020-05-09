@@ -6,7 +6,7 @@ void kio_putc(char c) {
     asci_0_putc(c);
 }
 
-void kio_puts(char *s) {
+void kio_puts(const char *s) {
     while (*s) {
         kio_putc(*(s++));
     }

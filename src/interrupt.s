@@ -155,11 +155,14 @@ interupt_leave:
 ; TODO: Get UFO ASAP, before another process can TRAP and change it
 PUBLIC trap
 trap:
-    in0 l, (ITC)
-    ld h, 0
+    in0 c, (ITC)
+    ld b, 0
     pop de
+    ld hl, sp
+    push de
     ld sp, trap_stack_tail
-    push hl ; Push ITC
+    push hl ; Push TRAP SP
+    push bc ; Push ITC
     push de ; Push TRAP PC
     in0 l, (CBAR)
     ld h, 0
@@ -268,9 +271,9 @@ interrupt_cbar:
     DEFB 0
 
 interrupt_stack:
-    DEFS 0x200
+    DEFS 0x400
 interrupt_stack_tail:
 
 trap_stack:
-    DEFS 0x40
+    DEFS 0x100
 trap_stack_tail:

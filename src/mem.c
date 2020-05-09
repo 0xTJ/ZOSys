@@ -1,9 +1,10 @@
 #include "mem.h"
 #include "dma.h"
+#include "panic.h"
 #include <cpu.h>
 #include <intrinsic.h>
 #include <string.h>
- 
+
 #pragma portmode z180
 
 #define PAGE_COUNT 256U
@@ -14,9 +15,9 @@
 extern char user_buffer[MEM_USER_BUFFER_SIZE];
 
 uint16_t page_usage_map[PAGE_BLOCK_COUNT] = {
-        0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
-        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    };
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+};
 
 int mem_alloc_page(void) __critical {
     // First try to grab from partially used page block
@@ -140,9 +141,7 @@ void *mem_get_user_buffer(void) {
 
 void *mem_copy_to_user_buffer(USER_PTR(void) user_ptr, size_t count) {
     if (count > sizeof(user_buffer)) {
-        // panic();
-        // TODO: Add panic() and use instead of the following
-        count = sizeof(user_buffer);
+        panic();
     }
 
     uint32_t user_addr_base = pa_from_pfn(CBR);
@@ -156,9 +155,7 @@ void *mem_copy_to_user_buffer(USER_PTR(void) user_ptr, size_t count) {
 
 void *mem_copy_from_user_buffer(USER_PTR(void) user_ptr, size_t count) {
     if (count > sizeof(user_buffer)) {
-        // panic();
-        // TODO: Add panic() and use instead of the following
-        count = sizeof(user_buffer);
+        panic();
     }
 
     uint32_t user_addr_base = pa_from_pfn(CBR);
