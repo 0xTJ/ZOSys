@@ -42,54 +42,6 @@ vector_table:
 
 SECTION code_rom_resident
 
-; Only to be done with interrupts disabled, while in kernel space
-; void context_init(void (*pc)());
-; PUBLIC _context_init
-_context_init:
-    ; Copy pc argument to DE
-    pop hl
-    pop de
-    push de
-    push hl
-    ; Copy interrupt_sp to HL and SP to interrupt_sp
-    ld hl, (interrupt_sp)
-    ld (interrupt_sp), sp
-    ; Put kernel out of address space
-    ld a, 0x11
-    out0 (CBAR), a
-    ; Load original interrupt_sp to SP
-    ld sp, hl
-    ; Clear HL
-    ld hl, 0
-    ; Push return address
-    push de
-    ; Push IX
-    push hl
-    ; Push AF, AF'
-    push hl
-    push hl
-    ; Push BC, DE, HL
-    push hl
-    push hl
-    push hl
-    ; Push BC', DE', HL'
-    push hl
-    push hl
-    push hl
-    ; Push IY
-    push hl
-    ; Copy interrupt_sp to HL and SP to interrupt_sp
-    ld hl, (interrupt_sp)
-    ld (interrupt_sp), sp
-    ; Bring kernel into address space
-    ld a, 0xF1
-    out0 (CBAR), a
-    ; Restore original SP
-    ld sp, hl
-    ; Return
-    ret
-
-
 interrupt_enter:
     ; Pop return address to IX while pushing IX
     ex (sp), ix

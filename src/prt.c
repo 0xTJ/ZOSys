@@ -10,6 +10,7 @@ void (*interrupt_routine_0)(void) = NULL;
 void (*interrupt_routine_1)(void) = NULL;
 
 int prt_start_0(uint16_t count, bool interrupt) {
+    TCR = TCR & ~__IO_TCR_TDE0;
     TMDR0L = count & 0xFF;
     TMDR0H = (count >> 8) & 0xFF;
     RLDR0L = (count - 1) & 0xFF;
@@ -19,6 +20,7 @@ int prt_start_0(uint16_t count, bool interrupt) {
 }
 
 int prt_start_1(uint16_t count, bool interrupt, enum prt_output_control toc) {
+    TCR = TCR & ~__IO_TCR_TDE1;
     TMDR1L = count & 0xFF;
     TMDR1H = (count >> 8) & 0xFF;
     RLDR1L = (count - 1) & 0xFF;
