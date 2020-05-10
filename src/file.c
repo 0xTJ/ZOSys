@@ -23,6 +23,9 @@ void file_file_free(struct file *ptr) {
 }
 
 void file_file_ref(struct file *ptr) __critical {
+    if (!ptr) {
+        panic();
+    }
     if (ptr->ref_count == SIZE_MAX) {
         panic();
     }
@@ -30,6 +33,9 @@ void file_file_ref(struct file *ptr) __critical {
 }
 
 void file_file_unref(struct file *ptr) __critical {
+    if (!ptr) {
+        panic();
+    }
     if (ptr->ref_count == 0) {
         panic();
     }
@@ -72,7 +78,7 @@ struct open_file *file_open_file_clone(struct open_file *src) {
     if (src) {
         dest = malloc(sizeof(struct open_file));
         if (dest) {
-            file_file_ref(dest->file);
+            file_file_ref(src->file);
             memcpy(dest, src, sizeof(dest));
         }
     }
@@ -348,12 +354,16 @@ int sys_chdir(USER_PTR(const char) path) {
     pathname_copied[MEM_USER_BUFFER_SIZE] = '\0';
 
     struct file *opened_dir = file_open(pathname_copied, O_RDONLY);
-    if (!opened_dir || opened_dir->type != FILE_DIRECTORY) {
+    if (!opened_dir) {
+        return -1;
+    } else if (opened_dir->type != FILE_DIRECTORY) {
         file_file_unref(opened_dir);
         return -1;
     }
 
-    file_file_unref(current_proc->cwd);
+    if (current_proc->cwd) {
+        file_file_unref(current_proc->cwd);
+    }
     current_proc->cwd = opened_dir;
 
     return 0;
@@ -368,7 +378,9 @@ int sys_fchdir(int fildes) {
         return -1;
     }
 
-    file_file_unref(current_proc->cwd);
+    if (current_proc->cwd) {
+        file_file_unref(current_proc->cwd);
+    }
     file_file_ref(opened_dir->file);
     current_proc->cwd = opened_dir->file;
 

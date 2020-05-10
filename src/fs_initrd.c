@@ -83,6 +83,10 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
         file_ptr = fs_initrd_ls_file;
     }
 
+    if (file_ptr) {
+        file_file_ref(file_ptr);
+    }
+
     return file_ptr;
 }
 

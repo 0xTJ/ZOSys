@@ -67,19 +67,37 @@ int call_func(char *command_line, char **envp) {
             status = atoi(argv[1]);
         }
         _exit(status);
+    } else if (strcmp(argv[0], "cd") == 0) {
+        if (argv[1]) {
+            chdir(argv[1]);
+        } else {
+            err("cd requires an argument\n");
+        }
+        return 0;
     }
 
     out("\nforking\n");
     pid_t pid = fork();
     if(pid == 0) {
         out("forked\n");
-        // if (execve(argv[0], argv, envp) < 0) {
-        //     err("Failed execve\n");
-        // }
+        if (execve(argv[0], argv, envp) < 0) {
+            err("Failed execve\n");
+            _exit(1);
+        }
         return -1;
+    } else if (pid < 0) {
+        out("Failed to fork\n");
+    } else {
+        out("parent\n");
+        int child_status = 0;
+        out("Waiting\n");
+        wait(&child_status);
+        out("Waited: ");
+        char buf[16];
+        itoa(child_status, buf, 10);
+        out(buf);
+        out("\n");
     }
-
-    out("parent\n");
 
     return 0;
 }
@@ -92,18 +110,7 @@ int main(int argc, char **argv, char **envp) {
         char buf[80];
         get_command_line(buf, sizeof(buf));
         out(buf);
-        out("doing call_func");
-        if (call_func(buf, envp) == -1) {
-            out("call_func returned -1\n");
-            _exit(1);
-        }
-
-        int status = 0;
-        out("Waiting\n");
-        wait(&status);
-        out("Waited: ");
-        itoa(status, buf, 10);
-        out(buf);
-        out("\n");
+        out("doing call_func\n");
+        call_func(buf, envp);
     }
 }
