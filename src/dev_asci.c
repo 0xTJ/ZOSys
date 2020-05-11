@@ -54,6 +54,8 @@ struct circular_buffer asci1_tx_circ_buf = {
     sizeof(asci1_tx_buf)
 };
 
+// TODO: Handle all UART errors
+
 int dev_asci_init(void) {
     asci_0_init();
     asci_1_init();
@@ -82,7 +84,7 @@ void asci_1_init(void) __critical {
 }
 
 int asci_0_putc(char c) __critical {
-    if (circular_buffer_put(&asci0_tx_circ_buf, c) < 1) {
+    if (circular_buffer_put(&asci0_tx_circ_buf, c) < 0) {
         return -1;
     }
 
@@ -93,15 +95,18 @@ int asci_0_putc(char c) __critical {
 
 int asci_0_getc(void) __critical {
     int c;
-    if ((c = circular_buffer_get(&asci0_rx_circ_buf)) < 1) {
+    if ((c = circular_buffer_get(&asci0_rx_circ_buf)) < 0) {
         return -1;
     }
+
+    if (circular_buffer_space_left(&asci0_rx_circ_buf) >= ASCI0_EMPTY_SPACE_LEFT)
+        CNTLA0 = (CNTLA0 & ~__IO_CNTLA0_RTS0) | __IO_CNTLA0_EFR;
 
     return (unsigned char) c;
 }
 
 int asci_1_putc(char c) __critical {
-    if (circular_buffer_put(&asci1_tx_circ_buf, c) < 1) {
+    if (circular_buffer_put(&asci1_tx_circ_buf, c) < 0) {
         return -1;
     }
 
@@ -112,7 +117,7 @@ int asci_1_putc(char c) __critical {
 
 int asci_1_getc(void) __critical {
     int c;
-    if ((c = circular_buffer_get(&asci1_rx_circ_buf)) < 1) {
+    if ((c = circular_buffer_get(&asci1_rx_circ_buf)) < 0) {
         return -1;
     }
 
@@ -191,8 +196,6 @@ void int_asci0(void) {
     if (stat & __IO_STAT0_TDRE && stat & __IO_STAT0_TIE) {
         // Ready to send a byte
         int send_byte = circular_buffer_get(&asci0_tx_circ_buf);
-        if (circular_buffer_space_left(&asci0_rx_circ_buf) >= ASCI0_EMPTY_SPACE_LEFT)
-            CNTLA0 = (CNTLA0 & ~__IO_CNTLA0_RTS0) | __IO_CNTLA0_EFR;
         if (send_byte < 0) {
             STAT0 &= ~__IO_STAT0_TIE;
         } else {

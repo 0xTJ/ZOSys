@@ -9,6 +9,8 @@ extern char initrd_sh_start[];
 extern char initrd_sh_end[];
 extern char initrd_ls_start[];
 extern char initrd_ls_end[];
+extern char initrd_dd_start[];
+extern char initrd_dd_end[];
 
 int fs_initrd_init(void);
 void fs_initrd_exit(void);
@@ -18,6 +20,7 @@ struct file *fs_initrd_root_file;
 struct file *fs_initrd_init_file;
 struct file *fs_initrd_sh_file;
 struct file *fs_initrd_ls_file;
+struct file *fs_initrd_dd_file;
 
 struct module fs_initrd_module = {
     fs_initrd_init,
@@ -59,6 +62,11 @@ int fs_initrd_init(void) {
     if (fs_initrd_ls_file) {
         file_init_plain(fs_initrd_ls_file, mp, 3);
     }
+    
+    fs_initrd_dd_file = file_file_new();
+    if (fs_initrd_dd_file) {
+        file_init_plain(fs_initrd_dd_file, mp, 4);
+    }
 
     return 0;
 }
@@ -81,6 +89,8 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
         file_ptr = fs_initrd_sh_file;
     } else if (strcmp(pathname, "ls") == 0) {
         file_ptr = fs_initrd_ls_file;
+    } else if (strcmp(pathname, "dd") == 0) {
+        file_ptr = fs_initrd_dd_file;
     }
 
     if (file_ptr) {
@@ -103,6 +113,9 @@ ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned 
     } else if (file_ptr->plain.inode == 3) {
         start = initrd_ls_start;
         end = initrd_ls_end;
+    } else if (file_ptr->plain.inode == 4) {
+        start = initrd_dd_start;
+        end = initrd_dd_end;
     }
 
     if (start && end) {
@@ -139,6 +152,10 @@ int fs_initrd_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned in
     case 2:
         dirp->d_ino = count + 1;
         strcpy(dirp->d_name, "ls");
+        return 1;
+    case 3:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "dd");
         return 0;
     default:
         return -1;

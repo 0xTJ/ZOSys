@@ -175,7 +175,7 @@ void process_switch(struct process *next_proc) __z88dk_fastcall {
         pop iy \n\
         pop ix \n\
         ");
-    // io_led_output = current_proc->pid;
+    io_led_output = current_proc->pid;
     (void) next_proc;
 }
 

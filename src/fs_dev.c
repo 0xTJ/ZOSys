@@ -12,6 +12,7 @@ struct file *fs_dev_asci0_file;
 struct file *fs_dev_asci1_file;
 struct file *fs_dev_sermem_file;
 struct file *fs_dev_sd0_file;
+struct file *fs_dev_flash0_file;
 
 struct module fs_dev_module = {
     fs_dev_init,
@@ -58,6 +59,11 @@ int fs_dev_init(void) {
         file_init_special(fs_dev_sd0_file, 3, 0, NULL);
     }
 
+    fs_dev_flash0_file = file_file_new();
+    if (fs_dev_flash0_file) {
+        file_init_special(fs_dev_flash0_file, 4, 0, NULL);
+    }
+
     return 0;
 }
 
@@ -81,6 +87,8 @@ struct file *fs_dev_get_file(struct mountpoint *mp, const char *pathname) {
         file_ptr = fs_dev_sermem_file;
     } else if (strcmp(pathname, "sd0") == 0) {
         file_ptr = fs_dev_sd0_file;
+    } else if (strcmp(pathname, "flash0") == 0) {
+        file_ptr = fs_dev_flash0_file;
     }
 
     if (file_ptr) {
@@ -111,6 +119,10 @@ int fs_dev_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int c
     case 3:
         dirp->d_ino = count + 1;
         strcpy(dirp->d_name, "sd0");
+        return 1;
+    case 4:
+        dirp->d_ino = count + 1;
+        strcpy(dirp->d_name, "flash0");
         return 0;
     default:
         return -1;

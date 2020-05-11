@@ -85,6 +85,56 @@ void mem_free_page_block(unsigned char page) __critical {
     page_usage_map[page_block] = 0x0000;
 }
 
+unsigned long mem_memcpy_long_from_kconst(unsigned long dest, const void *src, size_t count) {
+    dma_memcpy(dest, 0x00000U + (uintptr_t) src, count);
+    return dest;
+}
+
+unsigned long mem_memcpy_long_from_kdata(unsigned long dest, const void *src, size_t count) {
+    dma_memcpy(dest, pa_from_pfn(BBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+unsigned long mem_memcpy_long_from_kstack(unsigned long dest, const void *src, size_t count) {
+    dma_memcpy(dest, pa_from_pfn(CBR) + (uintptr_t) src, count);
+    return dest;
+}
+
+unsigned long mem_memcpy_long_from_kernel(unsigned long dest, const void *src, size_t count) {
+    if ((uintptr_t) src >= 0xF000) {
+        return mem_memcpy_long_from_kstack(dest, src, count);
+    } else if ((uintptr_t) src >= 0x1000) {
+        return mem_memcpy_long_from_kdata(dest, src, count);
+    } else {
+        return mem_memcpy_long_from_kconst(dest, src, count);
+    }
+}
+
+void *mem_memcpy_kdata_from_long(void *dest, unsigned long src, size_t count) {
+    dma_memcpy(pa_from_pfn(BBR) + (uintptr_t) dest, src, count);
+    return dest;
+}
+
+void *mem_memcpy_kstack_from_long(void *dest, unsigned long src, size_t count) {
+    dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, src, count);
+    return dest;
+}
+
+void *mem_memcpy_kernel_from_long(void *dest, unsigned long src, size_t count) {
+    if ((uintptr_t) dest >= 0xF000) {
+        return mem_memcpy_kstack_from_long(dest, src, count);
+    } else if ((uintptr_t) dest >= 0x1000) {
+        return mem_memcpy_kdata_from_long(dest, src, count);
+    } else {
+        return dest;
+    }
+}
+
+unsigned long mem_memcpy_long_from_long(unsigned long dest, unsigned long src, size_t count) {
+    dma_memcpy(dest, src, count);
+    return dest;
+}
+
 USER_PTR(void) mem_memcpy_user_from_kconst(USER_PTR(void) dest, const void *src, size_t count) {
     dma_memcpy(pa_from_pfn(CBR) + (uintptr_t) dest, 0x00000U + (uintptr_t) src, count);
     return dest;

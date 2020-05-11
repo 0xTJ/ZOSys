@@ -17,6 +17,7 @@ void err(const char *s) {
 
 ssize_t get_command_line(char *buf, size_t buflen) {
     size_t index = 0;
+    buf[0] = '\0';
 
     while (1) {
         char read_char;
@@ -46,10 +47,6 @@ ssize_t get_command_line(char *buf, size_t buflen) {
 }
 
 int call_func(char *command_line, char **envp) {
-
-    out("command_line:\n");
-    out(command_line);
-
     char *argv[8] = {0};
     char *ptr_to_use = command_line;
     for (unsigned i = 0;; ++i) {
@@ -76,10 +73,8 @@ int call_func(char *command_line, char **envp) {
         return 0;
     }
 
-    out("\nforking\n");
     pid_t pid = fork();
     if(pid == 0) {
-        out("forked\n");
         if (execve(argv[0], argv, envp) < 0) {
             err("Failed execve\n");
             _exit(1);
@@ -88,15 +83,8 @@ int call_func(char *command_line, char **envp) {
     } else if (pid < 0) {
         out("Failed to fork\n");
     } else {
-        out("parent\n");
         int child_status = 0;
-        out("Waiting\n");
         wait(&child_status);
-        out("Waited: ");
-        char buf[16];
-        itoa(child_status, buf, 10);
-        out(buf);
-        out("\n");
     }
 
     return 0;
@@ -109,8 +97,6 @@ int main(int argc, char **argv, char **envp) {
 
         char buf[80];
         get_command_line(buf, sizeof(buf));
-        out(buf);
-        out("doing call_func\n");
         call_func(buf, envp);
     }
 }

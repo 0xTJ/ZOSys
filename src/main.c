@@ -29,9 +29,10 @@ extern unsigned char trap_cbar;
 extern struct module block_buf_module;
 extern struct module dev_asci_module;
 extern struct module dev_sermem_module;
-extern struct module dev_sd_module;
 extern struct module fs_dev_module;
 extern struct module fs_initrd_module;
+extern struct module dev_sd_module;
+extern struct module dev_flash_module;
 
 char boot_disk[] = "Y:";
 char init_name[] = "init";
@@ -57,6 +58,7 @@ int main(void) {
     module_init(&fs_dev_module);
     module_init(&fs_initrd_module);
     module_init(&dev_sd_module);
+    module_init(&dev_flash_module);
 
     // Create process information structures
     kio_puts("Initializing processes\n");

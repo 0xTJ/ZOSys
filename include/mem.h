@@ -25,6 +25,14 @@ int mem_alloc_page_block_specific(unsigned int page);
 void mem_free_page(unsigned char page);
 void mem_free_page_block(unsigned char page);
 
+unsigned long mem_memcpy_long_from_kconst(unsigned long dest, const void *src, size_t count);
+unsigned long mem_memcpy_long_from_kdata(unsigned long dest, const void *src, size_t count);
+unsigned long mem_memcpy_long_from_kstack(unsigned long dest, const void *src, size_t count);
+unsigned long mem_memcpy_long_from_kernel(unsigned long dest, const void *src, size_t count);
+void *mem_memcpy_kdata_from_long(void *dest, unsigned long src, size_t count);
+void *mem_memcpy_kstack_from_long(void *dest, unsigned long src, size_t count);
+void *mem_memcpy_kernel_from_long(void *dest, unsigned long src, size_t count);
+unsigned long mem_memcpy_long_from_long(unsigned long dest, unsigned long src, size_t count);
 USER_PTR(void) mem_memcpy_user_from_kconst(USER_PTR(void) dest, const void *src, size_t count);
 USER_PTR(void) mem_memcpy_user_from_kdata(USER_PTR(void) dest, const void *src, size_t count);
 USER_PTR(void) mem_memcpy_user_from_kstack(USER_PTR(void) dest, const void *src, size_t count);
