@@ -55,3 +55,8 @@ int readdirent(unsigned int fd, struct dirent *dirp, unsigned int count) __naked
     __asm__("ld a, 10\nrst 8\nret");
     (void) fd, (void) dirp, (void) count;
 }
+
+int ioctl(int fildes, int request, ... /* arg */) __naked {
+    __asm__("ld a, 11\nrst 8\nret");
+    (void) fildes, (void) request;
+}

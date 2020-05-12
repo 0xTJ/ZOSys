@@ -12,6 +12,7 @@ typedef int (*device_char_open_func)(struct file *file_ptr, int flags);
 typedef int (*device_char_close_func)(struct file *file_ptr);
 typedef ssize_t (*device_char_read_func)(struct file *file_ptr, char *buf, size_t count, unsigned long pos);
 typedef ssize_t (*device_char_write_func)(struct file *file_ptr, const char *buf, size_t count, unsigned long pos);
+typedef int (*device_char_ioctl_func)(struct file *file_ptr, int request, uintptr_t argp);
 
 extern struct file_ops *device_drivers[DEVICE_MAJOR_NUM];
 
@@ -21,5 +22,6 @@ int device_open(struct file *file_ptr, int flags);
 int device_close(struct file *file_ptr);
 ssize_t device_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos);
 ssize_t device_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos);
+int device_ioctl(struct file *file_ptr, int request, uintptr_t argp);
 
 #endif

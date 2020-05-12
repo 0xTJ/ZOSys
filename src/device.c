@@ -65,7 +65,18 @@ ssize_t device_write(struct file *file_ptr, const char *buf, size_t count, unsig
         return -1;
     }
     if (!driver->write) {
-        return 0;
+        return -1;
     }
     return driver->write(file_ptr, buf, count, pos);
+}
+
+int device_ioctl(struct file *file_ptr, int request, uintptr_t argp) {
+    struct file_ops *driver = device_drivers[file_ptr->special.major - 1];
+    if (!driver) {
+        return -1;
+    }
+    if (!driver->ioctl) {
+        return -1;
+    }
+    return driver->ioctl(file_ptr, request, argp);
 }

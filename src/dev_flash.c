@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "kio.h"
+
 int dev_flash_init(void);
 void dev_flash_exit(void);
 
@@ -49,6 +51,7 @@ struct flash_instance flash_instance_0 = {
 struct file_ops flash_driver = {
     .read = flash_read,
     .write = flash_write,
+    .ioctl = flash_ioctl,
 };
 
 int dev_flash_init(void) {
@@ -66,6 +69,8 @@ void dev_flash_exit(void) {
 ssize_t flash_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
     ssize_t result = -1;
     struct flash_instance *instance = NULL;
+
+    kio_puts("flash_read\n");
 
     if (file_ptr->special.minor == 0) {
         instance = &flash_instance_0;
@@ -89,9 +94,26 @@ ssize_t flash_read(struct file *file_ptr, char *buf, size_t count, unsigned long
     return result;
 }
 
+ssize_t flash_write_sst39sfxxxa(struct flash_instance *instance, const char *buf, size_t count, unsigned long pos) {
+    unsigned long flash_base = instance->base_addr;
+    for (unsigned long bytes_written = 0; bytes_written < count; ++bytes_written) {
+        char tmp;
+        tmp = 0xAA;
+        mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+        tmp = 0x55;
+        mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
+        tmp = 0xA0;
+        mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+        mem_memcpy_long_from_kernel(flash_base + pos + bytes_written, &buf[bytes_written], 1);
+    }
+    return count;
+}
+
 ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
-    ssize_t result = -1;
+    int result = -1;
     struct flash_instance *instance = NULL;
+
+    kio_puts("flash_write\n");
 
     if (file_ptr->special.minor == 0) {
         instance = &flash_instance_0;
@@ -116,5 +138,76 @@ ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsign
         return -1;
     }
 
-    return -1;
+    switch (instance->chip) {
+    case SST39SF010A:
+    case SST39SF020A:
+    case SST39SF040A:
+        result = flash_write_sst39sfxxxa(instance, buf, count, pos);
+    }
+
+    return result;
+}
+
+int flash_ioctl_sst39sfxxxa(struct flash_instance *instance, int request, uintptr_t argp) {
+    unsigned long flash_base = instance->base_addr;
+    switch (request) {
+    case 0: {
+            unsigned char tmp;
+            tmp = 0xAA;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            tmp = 0x55;
+            mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
+            tmp = 0x80;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            tmp = 0xAA;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            tmp = 0x55;
+            mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
+            tmp = 0x30;
+            mem_memcpy_long_from_kernel(flash_base + (unsigned long) argp * flash_chip_descs[instance->chip].sector_size, &tmp, 1);
+        }
+        break;
+    case 1: {
+            unsigned char tmp;
+            tmp = 0xAA;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            tmp = 0x55;
+            mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
+            tmp = 0x80;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            tmp = 0xAA;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            tmp = 0x55;
+            mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
+            tmp = 0x10;
+            mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+        }
+        break;
+    }
+
+    return 0;
+}
+
+int flash_ioctl(struct file *file_ptr, int request, uintptr_t argp) {
+    int result = -1;
+    struct flash_instance *instance = NULL;
+
+    if (file_ptr->special.minor == 0) {
+        instance = &flash_instance_0;
+    } else {
+        // Not flash0
+    }
+
+    if (!instance) {
+        return -1;
+    }
+
+    switch (instance->chip) {
+    case SST39SF010A:
+    case SST39SF020A:
+    case SST39SF040A:
+        result = flash_ioctl_sst39sfxxxa(instance, request, argp);
+    }
+
+    return result;
 }

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -15,7 +16,7 @@ void err(const char *s) {
     write(STDERR_FILENO, s, strlen(s));
 }
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char **argv) {
     if (argc < 1) {
         return 1;
     }
@@ -61,6 +62,8 @@ int main(int argc, char **argv, char **envp) {
         err("\" for writing\n");
         return 1;
     }
+
+    ioctl(of_fd, 0, (uintptr_t) 4);
 
     while (1) {
         char tmp[256];

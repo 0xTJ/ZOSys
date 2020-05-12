@@ -15,6 +15,6 @@ struct dirent {
 
 // TODO: Complete this file
 
-int readdirent(unsigned int fd, struct dirent *dirp, unsigned int count);
+int readdirent(int fd, struct dirent *dirp, unsigned int count);
 
 #endif

@@ -205,6 +205,19 @@ ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigne
     }
 }
 
+int file_ioctl(struct file *file_ptr, int request, uintptr_t argp) {
+    switch (file_ptr->type) {
+    case FILE_DIRECTORY:
+    case FILE_PLAIN:
+        return -1;
+    case FILE_SPECIAL:
+        return device_ioctl(file_ptr, request, argp);
+    default:
+        panic();
+        return -1;
+    }
+}
+
 int file_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int count) {
     switch (file_ptr->type) {
     case FILE_DIRECTORY:
@@ -262,6 +275,9 @@ int sys_close(int fd) {
 }
 
 ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count) {
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        return -1;
+
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
@@ -299,6 +315,9 @@ ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count) {
 }
 
 ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count) {
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        return -1;
+
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
@@ -333,7 +352,23 @@ ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count) {
     return done_count;
 }
 
-int sys_readdirent(unsigned int fd, USER_PTR(struct dirent) dirp, unsigned int count) {
+int sys_ioctl(int fd, int request, USER_PTR(char) argp) {
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        return -1;
+
+    struct open_file *open_file = current_proc->open_files[fd];
+    if (!open_file)
+        return -1;
+
+    int result = file_ioctl(open_file->file, request, (uintptr_t) argp);
+
+    return result;
+}
+
+int sys_readdirent(int fd, USER_PTR(struct dirent) dirp, unsigned int count) {
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        return -1;
+
     struct open_file *open_file = current_proc->open_files[fd];
     if (!open_file)
         return -1;
@@ -341,7 +376,7 @@ int sys_readdirent(unsigned int fd, USER_PTR(struct dirent) dirp, unsigned int c
     // Check bounds
     if (dirp < 0x1000 || (unsigned long) dirp + sizeof(struct dirent) > 0xF000)
         return -1;
-        
+
     char *buf_copy = mem_get_user_buffer();
     int result = file_readdirent(open_file->file, (struct dirent *) buf_copy, count);
     mem_copy_from_user_buffer(dirp, sizeof(struct dirent));
