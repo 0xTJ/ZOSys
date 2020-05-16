@@ -2,6 +2,7 @@
 #include "file.h"
 #include "mem.h"
 #include "module.h"
+#include "mutex.h"
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -39,6 +40,7 @@ struct flash_chip_desc flash_chip_descs[] = {
 struct flash_instance {
     enum flash_chip chip;
     uint32_t base_addr;
+    mutex_t mtx;
 };
 
 struct flash_instance flash_instance_0 = {
@@ -53,6 +55,8 @@ struct file_ops flash_driver = {
 };
 
 int dev_flash_init(void) {
+    mutex_init(&flash_instance_0.mtx);
+
     device_register_driver(4, &flash_driver);
 
     return 0;
@@ -85,8 +89,12 @@ ssize_t flash_read(struct file *file_ptr, char *buf, size_t count, unsigned long
         count = size_left;
     }
 
+    mutex_lock(&instance->mtx);
+
     mem_memcpy_kernel_from_long(buf, instance->base_addr + pos, count);
     result = count;
+
+    mutex_unlock(&instance->mtx);
 
     return result;
 }
@@ -132,8 +140,10 @@ ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsign
     }
     unsigned long size_left = flash_chip_descs[instance->chip].chip_size - pos;
     if (count > size_left) {
-        return -1;
+        count = size_left;
     }
+
+    mutex_lock(&instance->mtx);
 
     switch (instance->chip) {
     case SST39SF010A:
@@ -142,10 +152,10 @@ ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsign
         result = flash_write_sst39sfxxxa(instance, buf, count, pos);
     }
 
+    mutex_unlock(&instance->mtx);
+
     return result;
 }
-
-// TODO: Make this file thread-safe
 
 int flash_ioctl_sst39sfxxxa(struct flash_instance *instance, int request, uintptr_t argp) {
     unsigned long flash_base = instance->base_addr;
@@ -202,6 +212,8 @@ int flash_ioctl(struct file *file_ptr, int request, uintptr_t argp) {
         return -1;
     }
 
+    mutex_lock(&instance->mtx);
+
     switch (instance->chip) {
     case SST39SF010A:
     case SST39SF020A:
@@ -209,6 +221,8 @@ int flash_ioctl(struct file *file_ptr, int request, uintptr_t argp) {
         result = flash_ioctl_sst39sfxxxa(instance, request, argp);
         break;
     }
+
+    mutex_unlock(&instance->mtx);
 
     return result;
 }
