@@ -67,7 +67,7 @@ interrupt_enter:
     ; Save CBAR and load with kernel CBAR
     in0 a, (CBAR)
     ld (interrupt_cbar), a
-    ld a, 0xF1
+    ld a, 0xF0
     out0 (CBAR), a
     ; Push return address from IX
     push ix
@@ -119,7 +119,7 @@ trap:
     in0 l, (CBAR)
     ld h, 0
     push hl ; Push CBAR
-    ld a, 0xF1
+    ld a, 0xF0
     out0 (CBAR), a
     call _trap
 trap_loop:

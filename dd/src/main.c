@@ -23,12 +23,26 @@ int main(int argc, char **argv) {
 
     const char *if_str = NULL;
     const char *of_str = NULL;
+    size_t bs = 512;
+    unsigned long seek = 0;
+    unsigned long skip = 0;
+    unsigned long count = (unsigned long) -1;
 
-    for (unsigned int i = 1; argv[i]; ++i) {
+    unsigned int i;
+
+    for (i = 1; argv[i]; ++i) {
         if (strncmp("if=", argv[i], 3) == 0) {
             if_str = argv[i] + 3;
         } else if (strncmp("of=", argv[i], 3) == 0) {
             of_str = argv[i] + 3;
+        // } else if (strncmp("bs=", argv[i], 3) == 0) {
+        //     bs = atol(argv[i] + 3);
+        } else if (strncmp("count=", argv[i], 6) == 0) {
+            count = atol(argv[i] + 6);
+        } else if (strncmp("seek=", argv[i], 5) == 0) {
+            seek = atol(argv[i] + 5);
+        } else if (strncmp("skip=", argv[i], 5) == 0) {
+            skip = atol(argv[i] + 5);
         } else {
             err("Unknown argument: \"");
             err(argv[i]);
@@ -63,11 +77,17 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    ioctl(of_fd, 0, (uintptr_t) 4);
+    if (skip > 0) {
+        lseek(if_fd, skip, 0);
+    }
 
-    while (1) {
-        char tmp[256];
-        ssize_t read_result = read(if_fd, tmp, sizeof(tmp));
+    if (seek > 0) {
+        lseek(of_fd, seek, SEEK_SET);
+    }
+
+    for (i = 0; i < count; ++i) {
+        char tmp[512];
+        ssize_t read_result = read(if_fd, tmp, 512);
         if (read_result < 0) {
             break;
         }

@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "kio.h"
-
 int dev_flash_init(void);
 void dev_flash_exit(void);
 
@@ -70,8 +68,6 @@ ssize_t flash_read(struct file *file_ptr, char *buf, size_t count, unsigned long
     ssize_t result = -1;
     struct flash_instance *instance = NULL;
 
-    kio_puts("flash_read\n");
-
     if (file_ptr->special.minor == 0) {
         instance = &flash_instance_0;
     } else {
@@ -90,8 +86,16 @@ ssize_t flash_read(struct file *file_ptr, char *buf, size_t count, unsigned long
     }
 
     mem_memcpy_kernel_from_long(buf, instance->base_addr + pos, count);
+    result = count;
 
     return result;
+}
+
+static void sst39sfxxxa_wait(void) {
+    char tmp[2];
+    do {
+        mem_memcpy_kernel_from_long(&tmp, 0, 2);
+    } while ((tmp[0] ^ tmp[1]) & (1 << 6));
 }
 
 ssize_t flash_write_sst39sfxxxa(struct flash_instance *instance, const char *buf, size_t count, unsigned long pos) {
@@ -105,6 +109,7 @@ ssize_t flash_write_sst39sfxxxa(struct flash_instance *instance, const char *buf
         tmp = 0xA0;
         mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
         mem_memcpy_long_from_kernel(flash_base + pos + bytes_written, &buf[bytes_written], 1);
+        sst39sfxxxa_wait();
     }
     return count;
 }
@@ -112,8 +117,6 @@ ssize_t flash_write_sst39sfxxxa(struct flash_instance *instance, const char *buf
 ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
     int result = -1;
     struct flash_instance *instance = NULL;
-
-    kio_puts("flash_write\n");
 
     if (file_ptr->special.minor == 0) {
         instance = &flash_instance_0;
@@ -131,12 +134,6 @@ ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsign
     if (count > size_left) {
         return -1;
     }
-    if (pos % flash_chip_descs[instance->chip].sector_size) {
-        return -1;
-    }
-    if (count % flash_chip_descs[instance->chip].sector_size) {
-        return -1;
-    }
 
     switch (instance->chip) {
     case SST39SF010A:
@@ -147,6 +144,8 @@ ssize_t flash_write(struct file *file_ptr, const char *buf, size_t count, unsign
 
     return result;
 }
+
+// TODO: Make this file thread-safe
 
 int flash_ioctl_sst39sfxxxa(struct flash_instance *instance, int request, uintptr_t argp) {
     unsigned long flash_base = instance->base_addr;
@@ -165,6 +164,7 @@ int flash_ioctl_sst39sfxxxa(struct flash_instance *instance, int request, uintpt
             mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
             tmp = 0x30;
             mem_memcpy_long_from_kernel(flash_base + (unsigned long) argp * flash_chip_descs[instance->chip].sector_size, &tmp, 1);
+            sst39sfxxxa_wait();
         }
         break;
     case 1: {
@@ -181,10 +181,10 @@ int flash_ioctl_sst39sfxxxa(struct flash_instance *instance, int request, uintpt
             mem_memcpy_long_from_kernel(flash_base + 0x2AAA, &tmp, 1);
             tmp = 0x10;
             mem_memcpy_long_from_kernel(flash_base + 0x5555, &tmp, 1);
+            sst39sfxxxa_wait();
         }
         break;
     }
-
     return 0;
 }
 
@@ -207,6 +207,7 @@ int flash_ioctl(struct file *file_ptr, int request, uintptr_t argp) {
     case SST39SF020A:
     case SST39SF040A:
         result = flash_ioctl_sst39sfxxxa(instance, request, argp);
+        break;
     }
 
     return result;

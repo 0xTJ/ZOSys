@@ -2,6 +2,7 @@ PUBLIC _initrd_init_start, _initrd_init_end
 PUBLIC _initrd_sh_start, _initrd_sh_end
 PUBLIC _initrd_ls_start, _initrd_ls_end
 PUBLIC _initrd_dd_start, _initrd_dd_end
+PUBLIC _initrd_ioctl_start, _initrd_ioctl_end
 
 SECTION code_compiler
 
@@ -20,3 +21,7 @@ _initrd_ls_end:
 _initrd_dd_start:
     BINARY "dd/dd.bin"
 _initrd_dd_end:
+
+_initrd_ioctl_start:
+    BINARY "ioctl/ioctl.bin"
+_initrd_ioctl_end:

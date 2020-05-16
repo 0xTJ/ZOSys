@@ -46,29 +46,29 @@ ENDIF
     ld a, 0x81
     out0 (CBAR), a
 
-    ; Map Bank Area at 0x1000 to 0x01000
-    ld a, #(0x01000 - 0x1000) >> 12
+    ; Map Bank Area at 0x1000 to 0x00000
+    ld a, #(0x00000 - 0x1000) >> 12
     out0 (BBR), a
 
-    ; Map Common Area 1 at 0x8000 to 0x81000
-    ld a, [0x81000 - 0x8000] >> 12
+    ; Map Common Area 1 at 0x8000 to 0x80000
+    ld a, [0x80000 - 0x8000] >> 12
     out0 (CBR), a
 
-    ; Copy 28k from 0x01000 to 0x81000
+    ; Copy 0x7000 from 0x00000 to 0x80000
     ld hl, 0x1000
     ld de, 0x8000
     ld bc, 0x7000
     ldir
 
-    ; Map Bank Area at 0x1000 to 0x08000
-    ld a, [0x08000 - 0x1000] >> 12
+    ; Map Bank Area at 0x1000 to 0x07000
+    ld a, [0x07000 - 0x1000] >> 12
     out0 (BBR), a
 
-    ; Map Common Area 1 at 0x8000 to 0x88000
-    ld a, [0x88000 - 0x8000] >> 12
+    ; Map Common Area 1 at 0x8000 to 0x87000
+    ld a, [0x87000 - 0x8000] >> 12
     out0 (CBR), a
 
-    ; Copy 28k from 0x08000 to 0x88000
+    ; Copy 0x7000 from 0x07000 to 0x87000
     ld hl, 0x1000
     ld de, 0x8000
     ld bc, 0x7000
@@ -82,7 +82,7 @@ ENDIF
     ; Common Area 0 to fill 0x0000-0x0FFF
     ; Bank Area to fill 0x1000-0xEFFF
     ; Common Area 1 to fill 0xF000-0xFFFF
-    ld a, 0xF1
+    ld a, 0xF0
     out0 (CBAR), a
 
     ; Initialize heap

@@ -5,9 +5,9 @@
 #define NULL ((void*) (0))
 #endif
 
-#ifndef SEEK_SET
+// #ifndef SEEK_SET
 #define SEEK_SET 0
-#endif
+// #endif
 
 #ifndef SEEK_CUR
 #define SEEK_CUR 1
@@ -64,7 +64,7 @@ int execve(const char *pathname, char *const argv[], char *const envp[]);
 void _exit(int status);
 int fchdir(int fildes);
 pid_t fork(void);
-off_t lseek(int fd, void *buf, size_t count);
+off_t lseek(int fd, off_t offset, int whence);
 ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
 

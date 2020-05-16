@@ -57,7 +57,7 @@ syscall:
     ; Load SP with base of copied function arguments
     ld sp, kernel_stack_tail - MAX_SYSCALL_BYTES
     ; Switch to kernel space
-    ld a, 0xF1
+    ld a, 0xF0
     out0 (CBAR), a
     ; Call function in HL
     ld de, _syscall_leave
@@ -88,6 +88,7 @@ EXTERN _sys_chdir
 EXTERN _sys_fchdir
 EXTERN _sys_readdirent
 EXTERN _sys_ioctl
+EXTERN _sys_lseek
 syscall_table:
     DEFW _sys_fork
     DEFW _sys_waitpid
@@ -101,6 +102,7 @@ syscall_table:
     DEFW _sys_fchdir
     DEFW _sys_readdirent
     DEFW _sys_ioctl
+    DEFW _sys_lseek
     DEFS (0x100 - (ASMPC - syscall_table)) * 2, 0x00
     
 

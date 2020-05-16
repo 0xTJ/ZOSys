@@ -7,6 +7,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include "kio.h"
 
 struct file *file_file_new(void) {
     struct file *result = malloc(sizeof(struct file));
@@ -361,6 +364,40 @@ int sys_ioctl(int fd, int request, USER_PTR(char) argp) {
         return -1;
 
     int result = file_ioctl(open_file->file, request, (uintptr_t) argp);
+
+    return result;
+}
+
+off_t sys_lseek(int fd, off_t offset, int whence) {
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        return -1;
+
+    kio_puts("sys_lseek(");
+    kio_put_ui(fd);
+    kio_puts(", ");
+    kio_put_ul(offset);
+    kio_puts(", ");
+    kio_put_ui(whence);
+    kio_puts(");");
+
+    struct open_file *open_file = current_proc->open_files[fd];
+    if (!open_file)
+        return -1;
+
+    switch (whence) {
+    case SEEK_SET:
+        open_file->pos = offset;
+        break;
+    case SEEK_CUR:
+        open_file->pos += offset;
+        break;
+    case SEEK_END:
+        return -1;
+    default:
+        return -1;
+    }
+
+    off_t result = open_file->pos;
 
     return result;
 }

@@ -60,3 +60,8 @@ int ioctl(int fildes, int request, ... /* arg */) __naked {
     __asm__("ld a, 11\nrst 8\nret");
     (void) fildes, (void) request;
 }
+
+off_t lseek(int fd, off_t offset, int whence) __naked {
+    __asm__("ld a, 12\nrst 8\nret");
+    (void) fd, (void) offset, (void) whence;
+}

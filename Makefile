@@ -10,6 +10,7 @@ INITDIR = init
 SHDIR = sh
 LSDIR = ls
 DDDIR = dd
+IOCTLDIR = ioctl
 
 SRCS_C = $(wildcard $(SRCDIR)/*.c)
 SRCS_ASM = $(SRCDIR)/start.s $(filter-out $(SRCDIR)/start.s,$(wildcard $(SRCDIR)/*.s))
@@ -23,9 +24,9 @@ LDFLAGS += --no-crt -nostdlib -clib=sdcc_iy
 
 TARGET = zosys
 
-.PHONY: all clean clib init sh ls dd
+.PHONY: all clean clib init sh ls dd ioctl
 
-all: clib init sh ls dd $(TARGET).bin
+all: clib init sh ls dd ioctl $(TARGET).bin
 
 $(TARGET).bin: $(SRCS_ASM) $(SRCS_C)
 	$(CC) $(ARCH) -s -g -m $(CPPFLAGS) $(CFLAGS) $^ $(LDLIBS) -o $@
@@ -54,6 +55,9 @@ ls: clib
 dd: clib
 	$(MAKE) -C $(DDDIR)
 
+ioctl: clib
+	$(MAKE) -C $(IOCTLDIR)
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	mkdir -p $(dir $@) $(dir $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d))
 	$(CC) $(ARCH) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
@@ -73,3 +77,4 @@ clean:
 	$(MAKE) -C $(SHDIR) clean
 	$(MAKE) -C $(LSDIR) clean
 	$(MAKE) -C $(DDDIR) clean
+	$(MAKE) -C $(IOCTLDIR) clean

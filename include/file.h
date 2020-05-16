@@ -84,6 +84,7 @@ int sys_close(int fd);
 ssize_t sys_read(int fd, USER_PTR(char) buf, size_t count);
 ssize_t sys_write(int fd, USER_PTR(char) buf, size_t count);
 int sys_ioctl(int fd, int request, USER_PTR(char) argp);
+off_t sys_lseek(int fd, off_t offset, int whence);
 int sys_readdirent(int fd, USER_PTR(struct dirent) dirp, unsigned int count);
 
 int sys_chdir(USER_PTR(const char) path);
