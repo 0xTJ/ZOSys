@@ -3,6 +3,13 @@
 #include "vfs.h"
 #include <string.h>
 
+struct initrd_entry {
+    const char *name;
+    struct file *file_ptr;
+    const char *start;
+    const char *end;
+};
+
 extern char initrd_init_start[];
 extern char initrd_init_end[];
 extern char initrd_sh_start[];
@@ -18,12 +25,14 @@ int fs_initrd_init(void);
 void fs_initrd_exit(void);
 struct file *fs_initrd_get_file(struct mountpoint *, const char *);
 
-struct file *fs_initrd_root_file;
-struct file *fs_initrd_init_file;
-struct file *fs_initrd_sh_file;
-struct file *fs_initrd_ls_file;
-struct file *fs_initrd_dd_file;
-struct file *fs_initrd_ioctl_file;
+struct initrd_entry entries[] = {
+    { "", NULL, NULL, NULL },
+    { "init", NULL, initrd_init_start, initrd_init_end },
+    { "sh", NULL, initrd_sh_start, initrd_sh_end },
+    { "ls", NULL, initrd_ls_start, initrd_ls_end },
+    { "dd", NULL, initrd_dd_start, initrd_dd_end },
+    { "ioctl", NULL, initrd_ioctl_start, initrd_ioctl_end },
+};
 
 struct module fs_initrd_module = {
     fs_initrd_init,
@@ -46,34 +55,15 @@ int fs_initrd_init(void) {
         return -1;
     }
 
-    fs_initrd_root_file = file_file_new();
-    if (fs_initrd_root_file) {
-        file_init_directory(fs_initrd_root_file, mp, 0);
+    entries[0].file_ptr = file_file_new();
+    if (entries[0].file_ptr) {
+        file_init_directory(entries[0].file_ptr, mp, 0);
     }
-
-    fs_initrd_init_file = file_file_new();
-    if (fs_initrd_init_file) {
-        file_init_plain(fs_initrd_init_file, mp, 1);
-    }
-    
-    fs_initrd_sh_file = file_file_new();
-    if (fs_initrd_sh_file) {
-        file_init_plain(fs_initrd_sh_file, mp, 2);
-    }
-    
-    fs_initrd_ls_file = file_file_new();
-    if (fs_initrd_ls_file) {
-        file_init_plain(fs_initrd_ls_file, mp, 3);
-    }
-    
-    fs_initrd_dd_file = file_file_new();
-    if (fs_initrd_dd_file) {
-        file_init_plain(fs_initrd_dd_file, mp, 4);
-    }
-    
-    fs_initrd_ioctl_file = file_file_new();
-    if (fs_initrd_ioctl_file) {
-        file_init_plain(fs_initrd_ioctl_file, mp, 5);
+    for (ino_t i = 1; i < (sizeof(entries) / sizeof(entries[0])); ++i) {
+        entries[i].file_ptr = file_file_new();
+        if (entries[i].file_ptr) {
+            file_init_plain(entries[i].file_ptr, mp, i);
+        }
     }
 
     return 0;
@@ -89,18 +79,11 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
 
     struct file *file_ptr = NULL;
 
-    if (strcmp(pathname, "") == 0) {
-        file_ptr = fs_initrd_root_file;
-    } else if (strcmp(pathname, "init") == 0) {
-        file_ptr = fs_initrd_init_file;
-    } else if (strcmp(pathname, "sh") == 0) {
-        file_ptr = fs_initrd_sh_file;
-    } else if (strcmp(pathname, "ls") == 0) {
-        file_ptr = fs_initrd_ls_file;
-    } else if (strcmp(pathname, "dd") == 0) {
-        file_ptr = fs_initrd_dd_file;
-    } else if (strcmp(pathname, "ioctl") == 0) {
-        file_ptr = fs_initrd_ioctl_file;
+    for (ino_t i = 0; i < (sizeof(entries) / sizeof(entries[0])); ++i) {
+        if (strcmp(pathname, entries[i].name) == 0) {
+            file_ptr = entries[i].file_ptr;
+            break;
+        }
     }
 
     if (file_ptr) {
@@ -111,25 +94,8 @@ struct file *fs_initrd_get_file(struct mountpoint *mp, const char *pathname) {
 }
 
 ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
-    char *start = NULL;
-    char *end = NULL;
-
-    if (file_ptr->plain.inode == 1) {
-        start = initrd_init_start;
-        end = initrd_init_end;
-    } else if (file_ptr->plain.inode == 2) {
-        start = initrd_sh_start;
-        end = initrd_sh_end;
-    } else if (file_ptr->plain.inode == 3) {
-        start = initrd_ls_start;
-        end = initrd_ls_end;
-    } else if (file_ptr->plain.inode == 4) {
-        start = initrd_dd_start;
-        end = initrd_dd_end;
-    } else if (file_ptr->plain.inode == 5) {
-        start = initrd_ioctl_start;
-        end = initrd_ioctl_end;
-    }
+    const char *start = entries[file_ptr->plain.inode].start;
+    const char *end = entries[file_ptr->plain.inode].end;
 
     if (start && end) {
         size_t file_size = end - start;
@@ -149,32 +115,21 @@ ssize_t fs_initrd_read(struct file *file_ptr, char *buf, size_t count, unsigned 
 }
 
 int fs_initrd_readdirent(struct file *file_ptr, struct dirent *dirp, unsigned int count) {
-    if (file_ptr != fs_initrd_root_file) {
+    if (file_ptr != entries[0].file_ptr) {
         return -1;
     }
 
-    switch (count) {
-    case 0:
-        dirp->d_ino = count + 1;
-        strcpy(dirp->d_name, "init");
-        return 1;
-    case 1:
-        dirp->d_ino = count + 1;
-        strcpy(dirp->d_name, "sh");
-        return 1;
-    case 2:
-        dirp->d_ino = count + 1;
-        strcpy(dirp->d_name, "ls");
-        return 1;
-    case 3:
-        dirp->d_ino = count + 1;
-        strcpy(dirp->d_name, "dd");
-        return 1;
-    case 4:
-        dirp->d_ino = count + 1;
-        strcpy(dirp->d_name, "ioctl");
-        return 0;
-    default:
+    ino_t inode = count + 1;
+
+    if (inode > 0 && inode < (sizeof(entries) / sizeof(entries[0]))) {
+        dirp->d_ino = inode;
+        strcpy(dirp->d_name, entries[inode].name);
+        if (inode == (sizeof(entries) / sizeof(entries[0]) - 1)) {
+            return 0;
+        } else {
+            return 1;
+        }
+    } else {
         return -1;
-    }
+    } 
 }
