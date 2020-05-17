@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -24,8 +25,16 @@ ssize_t get_command_line(char *buf, size_t buflen) {
         if (read(STDIN_FILENO, &read_char, 1) < 1) {
             continue;
         }
+        
+        if (!(isprint(read_char) ||
+              read_char == '\n' || read_char == '\r' ||
+              read_char == '\b' || read_char == '\t')) {
+            continue;
+        }
 
-        write(STDOUT_FILENO, &read_char, 1); // TODO: Check for error
+        if (read_char != '\b') {
+            write(STDOUT_FILENO, &read_char, 1); // TODO: Check for error
+        }
 
         switch (read_char) {
         case '\n':
@@ -33,6 +42,8 @@ ssize_t get_command_line(char *buf, size_t buflen) {
             return index;
         case '\b':
             if (index > 0) {
+                char backspace_chars[] = { '\b', ' ', '\b' };
+                write(STDOUT_FILENO, backspace_chars, sizeof(backspace_chars)); // TODO: Check for error
                 index -= 1;
             }
             break;
