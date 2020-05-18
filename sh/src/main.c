@@ -102,9 +102,27 @@ int call_func(char *command_line, char **envp) {
 }
 
 int main(int argc, char **argv, char **envp) {
+    int pipefd[2];
+
+    if (pipe(pipefd) == -1) {
+        err("Failed to open pipe");
+    }
+
+    char write_val[] = "tes\n";
+    write(pipefd[1], &write_val, 5);
+    char read_val[] = "none\n";
+    read(pipefd[0], &read_val, 6);
+
+    out(write_val);
+    out(read_val);
+
+    dup2(pipefd[1], STDERR_FILENO);
+
     while (1) {
         const char prompt[] = "> ";
         write(STDOUT_FILENO, prompt, strlen(prompt));
+
+        
 
         char buf[80];
         get_command_line(buf, sizeof(buf));

@@ -1,5 +1,6 @@
 #include "file.h"
 #include "device.h"
+#include "mem.h"
 #include "panic.h"
 #include "process.h"
 #include "vfs.h"
@@ -14,7 +15,7 @@
 struct file *file_file_new(void) {
     struct file *result = malloc(sizeof(struct file));
     if (result) {
-        memset(result, 0, sizeof(result));
+        memset(result, 0, sizeof(struct file));
         file_file_ref(result);
     }
     return result;
@@ -70,9 +71,21 @@ void file_init_directory(struct file *file_ptr, struct mountpoint *mp, ino_t ino
     file_ptr->directory.inode = inode;
 }
 
+void file_init_pipe(struct file *file_ptr_read, struct file *file_ptr_write, struct circular_buffer *circ_buf) {
+    file_ptr_read->type = FILE_PIPE;
+    file_ptr_write->type = FILE_PIPE;
+    file_ptr_read->pipe.end = PIPE_READ;
+    file_ptr_write->pipe.end = PIPE_WRITE;
+    file_ptr_read->pipe.circ_buf = circ_buf;
+    file_ptr_write->pipe.circ_buf = circ_buf;
+}
+
 struct open_file *file_open_file_new(void) {
     struct open_file *result = malloc(sizeof(struct open_file));
-    memset(result, 0, sizeof(result));
+    if (result) {
+        memset(result, 0, sizeof(struct open_file));
+        file_open_file_ref(result);
+    }
     return result;
 }
 
@@ -83,6 +96,8 @@ struct open_file *file_open_file_clone(struct open_file *src) {
         if (dest) {
             file_file_ref(src->file);
             memcpy(dest, src, sizeof(dest));
+            dest->ref_count = 0;
+            file_open_file_ref(dest);
         }
     }
     return dest;
@@ -94,6 +109,29 @@ void file_open_file_free(struct open_file *ptr) {
             file_file_unref(ptr->file);
         }
         free(ptr);
+    }
+}
+
+void file_open_file_ref(struct open_file *ptr) __critical {
+    if (!ptr) {
+        panic();
+    }
+    if (ptr->ref_count == SIZE_MAX) {
+        panic();
+    }
+    ptr->ref_count += 1;
+}
+
+void file_open_file_unref(struct open_file *ptr) __critical {
+    if (!ptr) {
+        panic();
+    }
+    if (ptr->ref_count == 0) {
+        panic();
+    }
+    ptr->ref_count -= 1;
+    if (ptr->ref_count == 0) {
+        file_open_file_free(ptr);
     }
 }
 
@@ -166,10 +204,24 @@ int file_close(struct file *file_ptr) {
         return device_close(file_ptr);
     case FILE_DIRECTORY:
         return -1;
+    case FILE_PIPE:
+        return 0;
     default:
         panic();
         return -1;
     }
+}
+
+static ssize_t pipe_read(struct file *file_ptr, char *buf, size_t count) __critical {
+    ssize_t count_done;
+    for (count_done = 0; count_done < count; ++count_done) {
+        int tmp = circular_buffer_get(file_ptr->pipe.circ_buf);
+        if (tmp == -1) {
+            break;
+        }
+        buf[count_done] = tmp;
+    }
+    return count_done;
 }
 
 ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long pos) {
@@ -184,10 +236,26 @@ ssize_t file_read(struct file *file_ptr, char *buf, size_t count, unsigned long 
         return device_read(file_ptr, buf, count, pos);
     case FILE_DIRECTORY:
         return -1;
+    case FILE_PIPE:
+        if (file_ptr->pipe.end != PIPE_READ) {
+            return -1;
+        }
+        return pipe_read(file_ptr, buf, count);
     default:
         panic();
         return -1;
     }
+}
+
+static ssize_t pipe_write(struct file *file_ptr, const char *buf, size_t count) __critical {
+    ssize_t count_done;
+    for (count_done = 0; count_done < count; ++count_done) {
+        if (circular_buffer_is_full(file_ptr->pipe.circ_buf)) {
+            break;
+        }
+        circular_buffer_put(file_ptr->pipe.circ_buf, buf[count_done]);
+    }
+    return count_done;
 }
 
 ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigned long pos) {
@@ -202,6 +270,11 @@ ssize_t file_write(struct file *file_ptr, const char *buf, size_t count, unsigne
         return device_write(file_ptr, buf, count, pos);
     case FILE_DIRECTORY:
         return -1;
+    case FILE_PIPE:
+        if (file_ptr->pipe.end != PIPE_WRITE) {
+            return -1;
+        }
+        return pipe_write(file_ptr, buf, count);
     default:
         panic();
         return -1;
@@ -272,7 +345,7 @@ int sys_close(int fd) {
     if (!open_file)
         return -1;
     file_close(open_file->file);
-    file_open_file_free(open_file);
+    file_open_file_unref(open_file);
     current_proc->open_files[fd] = NULL;
     return 0;
 }
@@ -457,4 +530,113 @@ int sys_fchdir(int fildes) {
     current_proc->cwd = opened_dir->file;
 
     return 0;
+}
+
+int sys_pipe(USER_PTR(int[2]) pipefd) {
+    // Check bounds
+    if (pipefd < 0x1000 || (unsigned long) pipefd + sizeof(int [2]) > 0xF000)
+        return -1;
+
+    // Allocate file descriptors
+    int found_fd_read = -1;
+    for (found_fd_read = 0; found_fd_read < MAX_OPEN_FILES; ++found_fd_read)
+        if (!current_proc->open_files[found_fd_read])
+            break;
+    if (found_fd_read == MAX_OPEN_FILES)
+        return -1;
+    int found_fd_write = -1;
+    for (found_fd_write = 0; found_fd_write < MAX_OPEN_FILES; ++found_fd_write)
+        if (found_fd_write != found_fd_read && !current_proc->open_files[found_fd_write])
+            break;
+    if (found_fd_write == MAX_OPEN_FILES)
+        return -1;
+
+    // Create new open files
+    struct open_file *open_file_read = file_open_file_new();
+    if (!open_file_read) {
+        return -1;
+    }
+    struct open_file *open_file_write = file_open_file_new();
+    if (!open_file_write) {
+        file_open_file_free(open_file_read);
+        return -1;
+    }
+
+    // Create circular buffer
+    struct circular_buffer *circ_buf = malloc(sizeof(struct circular_buffer));
+    if (!circ_buf) {
+        file_open_file_free(open_file_write);
+        file_open_file_free(open_file_read);
+        return -1;
+    }
+    circ_buf->size = 128;
+    circ_buf->head = 0;
+    circ_buf->tail = 0;
+    circ_buf->buffer = malloc(circ_buf->size);
+    if (!circ_buf->buffer) {
+        free(circ_buf);
+        file_open_file_free(open_file_write);
+        file_open_file_free(open_file_read);
+        return -1;
+    }
+
+    // Create new files
+    struct file *file_ptr_read = file_file_new();
+    if (!file_ptr_read) {
+        free(circ_buf->buffer);
+        free(circ_buf);
+        file_open_file_free(open_file_write);
+        file_open_file_free(open_file_read);
+        return -1;
+    }
+    struct file *file_ptr_write = file_file_new();
+    if (!file_ptr_write) {
+        file_file_free(file_ptr_read);
+        free(circ_buf->buffer);
+        free(circ_buf);
+        file_open_file_free(open_file_write);
+        file_open_file_free(open_file_read);
+        return -1;
+    }
+
+    // Setup pipe
+    file_init_pipe(file_ptr_read, file_ptr_write, circ_buf);
+
+    open_file_read->file = file_ptr_read;
+    open_file_write->file = file_ptr_write;
+
+    open_file_read->pos = 0;
+    open_file_write->pos = 0;
+    current_proc->open_files[found_fd_read] = open_file_read;
+    current_proc->open_files[found_fd_write] = open_file_write;
+
+    int pipefd_kernel[2] = { found_fd_read, found_fd_write };
+    mem_memcpy_user_from_kernel(pipefd, pipefd_kernel, sizeof(int) * 2);
+
+    return 0;
+}
+
+int sys_dup2(int oldfd, int newfd) {
+    if (oldfd < 0 || oldfd >= MAX_OPEN_FILES)
+        return -1;
+    if (newfd < 0 || newfd >= MAX_OPEN_FILES)
+        return -1;
+
+    struct open_file *old_open_file = current_proc->open_files[oldfd];
+    if (!old_open_file)
+        return -1;
+        
+    if (oldfd == newfd)
+        return newfd;
+
+    if (current_proc->open_files[newfd]) {
+        file_close(current_proc->open_files[newfd]->file);
+        file_open_file_unref(current_proc->open_files[newfd]);
+        current_proc->open_files[newfd] = NULL;
+    }
+
+    file_open_file_ref(current_proc->open_files[oldfd]);
+    current_proc->open_files[newfd] = current_proc->open_files[oldfd];
+
+    return newfd;
 }

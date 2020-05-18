@@ -65,3 +65,13 @@ off_t lseek(int fd, off_t offset, int whence) __naked {
     __asm__("ld a, 12\nrst 8\nret");
     (void) fd, (void) offset, (void) whence;
 }
+
+int pipe(int pipefd[2]) __naked {
+    __asm__("ld a, 13\nrst 8\nret");
+    (void) pipefd;
+}
+
+int dup2(int oldfd, int newfd) __naked {
+    __asm__("ld a, 14\nrst 8\nret");
+    (void) oldfd, (void) newfd;
+}

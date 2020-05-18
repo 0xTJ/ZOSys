@@ -1,6 +1,7 @@
 #ifndef INCLUDE_FILE_H
 #define INCLUDE_FILE_H
 
+#include "circular_buffer.h"
 #include "mem.h"
 #include <stdint.h>
 #include <sys/types.h>
@@ -11,6 +12,12 @@ enum file_type {
     FILE_PLAIN,
     FILE_SPECIAL,
     FILE_DIRECTORY,
+    FILE_PIPE,
+};
+
+enum pipe_end {
+    PIPE_READ,
+    PIPE_WRITE,
 };
 
 struct file {
@@ -30,6 +37,10 @@ struct file {
             struct mountpoint *mp;
             ino_t inode;
         } directory;
+        struct {
+            enum pipe_end end;
+            struct circular_buffer *circ_buf;
+        } pipe;
     };
 };
 
@@ -56,6 +67,7 @@ struct file_ops {
 
 struct open_file {
     struct file *file;
+    size_t ref_count;
     unsigned long pos;
 };
 
@@ -67,10 +79,13 @@ void file_file_unref(struct file *ptr);
 void file_init_plain(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
 void file_init_special(struct file *file_ptr, int major, int minor, struct file *backing);
 void file_init_directory(struct file *file_ptr, struct mountpoint *mp, ino_t inode);
+void file_init_pipe(struct file *file_ptr_read, struct file *file_ptr_write, struct circular_buffer *circ_buf);
 
 struct open_file *file_open_file_new(void);
 struct open_file *file_open_file_clone(struct open_file *src);
 void file_open_file_free(struct open_file *ptr);
+void file_open_file_ref(struct open_file *ptr);
+void file_open_file_unref(struct open_file *ptr);
 
 struct file *file_open(const char *pathname, int flags);
 int file_close(struct file *file_ptr);

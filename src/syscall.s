@@ -89,6 +89,8 @@ EXTERN _sys_fchdir
 EXTERN _sys_readdirent
 EXTERN _sys_ioctl
 EXTERN _sys_lseek
+EXTERN _sys_pipe
+EXTERN _sys_dup2
 syscall_table:
     DEFW _sys_fork
     DEFW _sys_waitpid
@@ -103,6 +105,8 @@ syscall_table:
     DEFW _sys_readdirent
     DEFW _sys_ioctl
     DEFW _sys_lseek
+    DEFW _sys_pipe
+    DEFW _sys_dup2
     DEFS (0x100 - (ASMPC - syscall_table)) * 2, 0x00
     
 
